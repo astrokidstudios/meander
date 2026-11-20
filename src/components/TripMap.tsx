@@ -45,24 +45,53 @@ function ClickToAdd({ active, onPick }: { active: boolean; onPick: (lat: number,
   return null
 }
 
-function LocateMe({ onFound }: { onFound: (p: [number, number]) => void }) {
+function getPosition(opts: PositionOptions) {
+  return new Promise<GeolocationPosition>((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, opts))
+}
+
+/** Where to fix location access, in the words of the device the person is on. */
+function permissionHelp() {
+  const ua = navigator.userAgent
+  const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)
+  if (ios) return 'iPhone Settings → Privacy & Security → Location Services → Safari Websites → “While Using the App”, then fully close and reopen Meander.'
+  if (/Electron/.test(ua) && /Mac/.test(ua)) return 'Mac System Settings → Privacy & Security → Location Services → turn on Meander, then reopen it.'
+  if (/Mac/.test(ua)) return 'Mac System Settings → Privacy & Security → Location Services → turn on your browser, and allow location for this site.'
+  return 'Windows Settings → Privacy & security → Location → turn on location (and “Let apps access your location”).'
+}
+
+function LocateMe({ onFound, onMessage }: { onFound: (p: [number, number]) => void; onMessage: (m: string) => void }) {
   const map = useMap()
   const [busy, setBusy] = useState(false)
+  async function locate() {
+    if (!navigator.geolocation) return onMessage('Location isn’t available on this device.')
+    setBusy(true)
+    onMessage('')
+    try {
+      let pos: GeolocationPosition
+      try {
+        // Quick GPS fix (a recent one is fine)…
+        pos = await getPosition({ enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 })
+      } catch (err) {
+        if ((err as GeolocationPositionError).code === 1) throw err
+        // …and if GPS is slow (indoors, poor signal), fall back to a rougher network/Wi-Fi fix.
+        pos = await getPosition({ enableHighAccuracy: false, timeout: 20000, maximumAge: 300000 })
+      }
+      const p: [number, number] = [pos.coords.latitude, pos.coords.longitude]
+      onFound(p)
+      map.setView(p, 15)
+    } catch (err) {
+      const code = (err as GeolocationPositionError).code
+      onMessage(code === 1
+        ? `Location is blocked for Meander. To allow it: ${permissionHelp()}`
+        : code === 3
+          ? 'Couldn’t get a location fix in time. Try again, ideally near a window or outside.'
+          : 'Your device couldn’t work out where you are right now. Check Location Services is on and try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
   return (
-    <button
-      className="map-btn"
-      title="Show my location"
-      onClick={(e) => {
-        e.stopPropagation()
-        if (!navigator.geolocation) return alert('Location isn’t available on this device.')
-        setBusy(true)
-        navigator.geolocation.getCurrentPosition(
-          (pos) => { const p: [number, number] = [pos.coords.latitude, pos.coords.longitude]; onFound(p); map.setView(p, 15); setBusy(false) },
-          () => { alert('Couldn’t get your location. Check location permissions.'); setBusy(false) },
-          { enableHighAccuracy: true, timeout: 15000 },
-        )
-      }}
-    >{busy ? '…' : '◎'}</button>
+    <button className="map-btn" title="Show my location" onClick={(e) => { e.stopPropagation(); locate() }}>{busy ? '…' : '◎'}</button>
   )
 }
 
@@ -76,6 +105,7 @@ export default function TripMap({ trip, stops, onEdit, focusDay, setFocusDay, fu
 }) {
   const [dropping, setDropping] = useState(false)
   const [me, setMe] = useState<[number, number] | null>(null)
+  const [locMsg, setLocMsg] = useState('')
   const [showSaved, setShowSaved] = useState(true)
   const n = dayCount(trip.startDate, trip.endDate)
   const geo = stops.filter(hasCoords)
@@ -143,10 +173,11 @@ export default function TripMap({ trip, stops, onEdit, focusDay, setFocusDay, fu
         })}
         {me && <CircleMarker center={me} radius={8} pathOptions={{ color: '#fff', weight: 3, fillColor: '#1982c4', fillOpacity: 1 }} />}
         <div className="map-controls" ref={(el) => { if (el) { L.DomEvent.disableClickPropagation(el); L.DomEvent.disableScrollPropagation(el) } }}>
-          <LocateMe onFound={setMe} />
+          <LocateMe onFound={setMe} onMessage={setLocMsg} />
           <button className={`map-btn ${dropping ? 'on' : ''}`} title="Drop a pin" onClick={(e) => { e.stopPropagation(); setDropping((d) => !d) }}>📍</button>
         </div>
       </MapContainer>
+      {locMsg && <button className="map-msg" onClick={() => setLocMsg('')}>{locMsg} <b>✕</b></button>}
       {dropping && <div className="map-hint">Tap the map to add a place{typeof focusDay === 'number' ? ` to day ${focusDay + 1}` : ' to Saved'}</div>}
       {full && (
         <div className="map-days">

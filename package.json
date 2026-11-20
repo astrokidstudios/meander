@@ -1,7 +1,7 @@
 {
   "name": "meander",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -88,7 +88,11 @@
         }
       ],
       "icon": "build/icon-1024.png",
-      "category": "public.app-category.travel"
+      "category": "public.app-category.travel",
+      "extendInfo": {
+        "NSLocationWhenInUseUsageDescription": "Meander uses your location to show where you are on the trip map.",
+        "NSLocationUsageDescription": "Meander uses your location to show where you are on the trip map."
+      }
     }
   }
 }
