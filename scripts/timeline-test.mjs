@@ -6,7 +6,7 @@ const page = await ctx.newPage()
 const errors = []
 page.on('pageerror', (e) => errors.push(String(e)))
 await page.goto('http://127.0.0.1:4174/')
-await page.getByRole('button', { name: '+ New trip' }).click()
+await page.getByRole('button', { name: /Plan my first trip/ }).click()
 await page.getByPlaceholder('e.g. Lisbon, Portugal').fill('Lisbon, Portugal')
 await page.getByRole('button', { name: 'Create trip' }).click()
 const day1 = page.locator('#day-0')

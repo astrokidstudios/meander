@@ -8,7 +8,7 @@ async function run(first) {
   win.on('pageerror', (e) => errs.push(String(e)))
   await win.waitForSelector('.home', { timeout: 15000 })
   if (first) {
-    await win.getByRole('button', { name: '+ New trip' }).click()
+    await win.getByRole('button', { name: /Plan my first trip/ }).click()
     await win.getByPlaceholder('e.g. Lisbon, Portugal').fill('Desktop test')
     await win.getByRole('button', { name: 'Create trip' }).click()
     await win.waitForSelector('.day')
