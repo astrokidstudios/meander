@@ -10,6 +10,7 @@ export interface Trip {
   budget: number
   travelers: number
   color: string
+  emoji?: string
   notes: string
   createdAt: number
   updatedAt: number

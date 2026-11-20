@@ -1,7 +1,8 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { db, deleteTrip, exportData, type Stop } from '../db'
-import { downloadJSON, fmtRange, slug } from '../utils'
+import { downloadJSON, fmtRange, slug, toISODate } from '../utils'
+import { countdown } from './TripList'
 import { go, type Tab } from '../App'
 import Itinerary from './Itinerary'
 import SavedPlaces from './SavedPlaces'
@@ -15,7 +16,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'plan', label: 'Itinerary', icon: '🗓️' },
   { id: 'places', label: 'Saved', icon: '⭐' },
   { id: 'map', label: 'Map', icon: '🗺️' },
-  { id: 'budget', label: 'Budget', icon: '💷' },
+  { id: 'budget', label: 'Money', icon: '💰' },
   { id: 'notes', label: 'Notes', icon: '📝' },
 ]
 
@@ -42,10 +43,11 @@ export default function TripView({ tripId, tab }: { tripId: string; tab: Tab }) 
   return (
     <div className="trip" style={{ '--trip': trip.color } as React.CSSProperties}>
       <header className="trip-head">
-        <button className="icon-btn" onClick={() => go('/')} aria-label="All trips">‹</button>
+        <button className="icon-btn back" onClick={() => go('/')} aria-label="All trips">‹</button>
+        <div className="trip-head-emoji" onClick={() => setEditingTrip(true)}>{trip.emoji ?? '🧳'}</div>
         <div className="trip-title" onClick={() => setEditingTrip(true)} title="Edit trip">
           <h1>{trip.name}</h1>
-          <div className="muted small">{trip.destination ? `${trip.destination} · ` : ''}{fmtRange(trip.startDate, trip.endDate)}</div>
+          <div className="trip-sub">{fmtRange(trip.startDate, trip.endDate)}{(() => { const c = countdown(trip, toISODate(new Date())); return c && c.big !== '✓' ? ` · ${c.big === '🧳' ? 'on the trip now!' : `${c.big} ${c.small}`}` : '' })()}</div>
         </div>
         <div className="menu-wrap">
           <button className="icon-btn" onClick={() => setMenu((m) => !m)} aria-label="Trip menu">⋯</button>

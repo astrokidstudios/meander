@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { db, uid, type Trip } from '../db'
-import { addDays, CURRENCIES, dayCount, toISODate, TRIP_COLORS } from '../utils'
+import { addDays, CURRENCIES, dayCount, toISODate, TRIP_COLORS, TRIP_EMOJIS } from '../utils'
 import Modal from './Modal'
 
 export default function TripForm({ trip, onClose, onSaved }: { trip?: Trip; onClose: () => void; onSaved?: (id: string) => void }) {
@@ -14,6 +14,7 @@ export default function TripForm({ trip, onClose, onSaved }: { trip?: Trip; onCl
     budget: trip?.budget ?? 0,
     travelers: trip?.travelers ?? 1,
     color: trip?.color ?? TRIP_COLORS[Math.floor(Math.random() * TRIP_COLORS.length)],
+    emoji: trip?.emoji ?? TRIP_EMOJIS[Math.floor(Math.random() * TRIP_EMOJIS.length)],
   })
   const [error, setError] = useState('')
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((p) => ({ ...p, [k]: v }))
@@ -43,12 +44,12 @@ export default function TripForm({ trip, onClose, onSaved }: { trip?: Trip; onCl
 
   return (
     <Modal
-      title={trip ? 'Edit trip' : 'New trip'}
+      title={trip ? 'Edit trip' : 'New adventure ✨'}
       onClose={onClose}
       footer={<><button className="btn ghost" onClick={onClose}>Cancel</button><button className="btn primary" onClick={save}>{trip ? 'Save' : 'Create trip'}</button></>}
     >
       <form className="form" onSubmit={(e) => { e.preventDefault(); save() }}>
-        <label>Destination<input autoFocus value={f.destination} onChange={(e) => set('destination', e.target.value)} placeholder="e.g. Lisbon, Portugal" /></label>
+        <label>Where to?<input autoFocus value={f.destination} onChange={(e) => set('destination', e.target.value)} placeholder="e.g. Lisbon, Portugal" /></label>
         <label>Trip name<input value={f.name} onChange={(e) => set('name', e.target.value)} placeholder={f.destination ? `Trip to ${f.destination}` : 'e.g. Summer in Portugal'} /></label>
         <div className="grid2">
           <label>Start<input type="date" value={f.startDate} onChange={(e) => { const v = e.target.value; setF((p) => ({ ...p, startDate: v, endDate: p.endDate < v ? v : p.endDate })) }} /></label>
@@ -58,6 +59,14 @@ export default function TripForm({ trip, onClose, onSaved }: { trip?: Trip; onCl
           <label>Currency<select value={f.currency} onChange={(e) => set('currency', e.target.value)}>{CURRENCIES.map((c) => <option key={c}>{c}</option>)}</select></label>
           <label>Budget<input type="number" min={0} inputMode="decimal" value={f.budget || ''} onChange={(e) => set('budget', Number(e.target.value))} placeholder="0" /></label>
           <label>Travellers<input type="number" min={1} value={f.travelers} onChange={(e) => set('travelers', Math.max(1, Number(e.target.value)))} /></label>
+        </div>
+        <div className="field">
+          <span>Pick a vibe</span>
+          <div className="emoji-grid">
+            {TRIP_EMOJIS.map((e) => (
+              <button type="button" key={e} className={`emoji-opt ${f.emoji === e ? 'on' : ''}`} onClick={() => set('emoji', e)} aria-label={`Emoji ${e}`}>{e}</button>
+            ))}
+          </div>
         </div>
         <div className="field">
           <span>Colour</span>

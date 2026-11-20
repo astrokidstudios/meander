@@ -25,7 +25,7 @@ export default function SavedPlaces({ trip, stops, onEdit }: { trip: Trip; stops
           ))}
         </div>
       )}
-      {all.length === 0 && <p className="muted pad">No saved places yet. Search above, or drop a pin on the map.</p>}
+      {all.length === 0 && <p className="muted pad">Nothing saved yet. Search above or drop a pin on the map to start your wishlist. ⭐</p>}
       <div className="stop-list">
         {list.map((s, i) => (
           <StopRow key={s.id} stop={s} index={i} trip={trip} all={stops} onEdit={onEdit} isFirst={i === 0} isLast={i === list.length - 1} />

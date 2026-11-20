@@ -1,13 +1,14 @@
 import type { ExpenseCategory, Stop, StopCategory, TravelMode } from './db'
 
 export const DAY_COLORS = [
-  '#e4572e', '#17a398', '#f3a712', '#6a4c93', '#1982c4',
-  '#8ac926', '#ff7aa2', '#3d405b', '#c44900', '#00a6a6',
+  '#ff6b4a', '#2ec4b6', '#ffb627', '#7b61ff', '#4c8dff',
+  '#20a464', '#ff5fa2', '#f77f00', '#00a6d6', '#9b5de5',
 ]
 export const dayColor = (day: number | null) =>
   day === null ? '#8a8f98' : DAY_COLORS[day % DAY_COLORS.length]
 
-export const TRIP_COLORS = ['#17a398', '#e4572e', '#1982c4', '#6a4c93', '#f3a712', '#3d405b']
+export const TRIP_COLORS = ['#2ec4b6', '#ff6b4a', '#4c8dff', '#7b61ff', '#ffb627', '#ff5fa2', '#20a464', '#1f2a44']
+export const TRIP_EMOJIS = ['🌴', '🏖️', '🏔️', '🗼', '🏰', '🗽', '🌋', '🏝️', '⛷️', '🚐', '🚢', '✈️', '🎡', '🍕', '🍣', '🥐', '🌮', '🎒', '🏕️', '🌸', '🍁', '❄️', '🎢', '🐘']
 
 export const STOP_CATS: Record<StopCategory, { label: string; icon: string }> = {
   sight: { label: 'Sight', icon: '🏛️' },
@@ -177,11 +178,11 @@ export const CURRENCIES = ['GBP', 'EUR', 'USD', 'AUD', 'CAD', 'NZD', 'JPY', 'CHF
 // ---------- Day timeline ----------
 
 export const TRAVEL_MODES: Record<TravelMode, { label: string; icon: string }> = {
-  auto: { label: 'Auto (walk short hops)', icon: '🧭' },
-  walk: { label: 'Walking', icon: '🚶' },
-  transit: { label: 'Public transport', icon: '🚌' },
-  drive: { label: 'Driving / taxi', icon: '🚗' },
-  cycle: { label: 'Cycling', icon: '🚲' },
+  auto: { label: 'Auto', icon: '🧭' },
+  walk: { label: 'Walk', icon: '🚶' },
+  transit: { label: 'Transit', icon: '🚌' },
+  drive: { label: 'Drive', icon: '🚗' },
+  cycle: { label: 'Cycle', icon: '🚲' },
 }
 
 /** Straight-line distance × 1.3 approximates real streets. Speeds are door-to-door city averages. */

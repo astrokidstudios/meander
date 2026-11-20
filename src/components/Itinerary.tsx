@@ -6,6 +6,8 @@ import { addDays, buildTimeline, dayColor, dayCount, fmtClock, fmtDate, fmtDista
 import StopRow from './StopRow'
 import AddStop from './AddStop'
 
+const FREE_DAY_LINES = ['A free day! Add something below, or just wander. 🌤️', 'Nothing planned yet. Maybe a long lunch? 🍝', 'Blank page. Adventure goes here. 🧭']
+
 export default function Itinerary({ trip, stops, onEdit, focusDay, setFocusDay }: {
   trip: Trip
   stops: Stop[]
@@ -34,7 +36,8 @@ export default function Itinerary({ trip, stops, onEdit, focusDay, setFocusDay }
   async function sortByTime(day: number) {
     const list = stopsForDay(stops, day)
     const timed = list.filter((s) => s.time).sort((a, b) => a.time.localeCompare(b.time))
-    // Untimed stops keep their relative position after the timed ones they followed.
+    if (!timed.length) return setFlash('Give places a fixed time (in their details) to sort by it.')
+    // Untimed stops keep their slots; timed ones are put in clock order.
     const result: Stop[] = []
     let ti = 0
     for (const s of list) result.push(s.time ? timed[ti++] : s)
@@ -46,9 +49,9 @@ export default function Itinerary({ trip, stops, onEdit, focusDay, setFocusDay }
     const before = routeLength(list)
     const next = optimiseRoute(list)
     const after = routeLength(next)
-    if (before - after < 0.05) return setFlash(`Day ${day + 1} is already in a sensible order.`)
+    if (before - after < 0.05) return setFlash(`👌 Day ${day + 1} is already in a great order.`)
     await saveOrder(next, day)
-    setFlash(`Day ${day + 1} reordered: ${fmtDistance(before)} → ${fmtDistance(after)} (first stop kept).`)
+    setFlash(`✨ Day ${day + 1} shuffled: ${fmtDistance(before)} → ${fmtDistance(after)} of travel (first stop kept).`)
   }
 
   return (
@@ -57,13 +60,13 @@ export default function Itinerary({ trip, stops, onEdit, focusDay, setFocusDay }
         <button className={`chip ${focusDay === 'all' ? 'on' : ''}`} onClick={() => jump('all')}>All days</button>
         {Array.from({ length: n }, (_, d) => (
           <button key={d} className={`chip ${focusDay === d ? 'on' : ''}`} style={{ '--c': dayColor(d) } as React.CSSProperties} onClick={() => jump(d)}>
-            <i style={{ background: dayColor(d) }} />{trip.startDate ? fmtDate(addDays(trip.startDate, d), { weekday: 'short', day: 'numeric' }) : `Day ${d + 1}`}
+            <i />{trip.startDate ? fmtDate(addDays(trip.startDate, d), { weekday: 'short', day: 'numeric' }) : `Day ${d + 1}`}
           </button>
         ))}
       </div>
-      {flash && <div className="notice no-print" onClick={() => setFlash('')}>{flash}</div>}
+      {flash && <div className="notice pop no-print" onClick={() => setFlash('')}>{flash}</div>}
       {saved > 0 && (
-        <a className="notice subtle no-print" href={`#/trip/${trip.id}/places`}>⭐ {saved} saved place{saved === 1 ? '' : 's'} not on a day yet. Open Saved to schedule them.</a>
+        <a className="notice subtle no-print" href={`#/trip/${trip.id}/places`}>⭐ {saved} saved place{saved === 1 ? '' : 's'} waiting for a day. Tap to plan them in.</a>
       )}
 
       {Array.from({ length: n }, (_, d) => {
@@ -78,53 +81,58 @@ export default function Itinerary({ trip, stops, onEdit, focusDay, setFocusDay }
         const lastT = timeline[timeline.length - 1]
         const lastLeave = lastT ? lastT.leave ?? lastT.arrive : null
         const routeUrl = googleRouteUrl(list, mode)
+        const done = list.filter((s) => s.done).length
+        const allDone = list.length > 0 && done === list.length
+        const stats = [
+          list.length ? `${list.length} stop${list.length === 1 ? '' : 's'}` : '',
+          km > 0 ? fmtDistance(km) : '',
+          cost > 0 ? money(cost, trip.currency) : '',
+          lastLeave !== null && list.length > 1 ? `done by ${fmtClock(lastLeave)}` : '',
+        ].filter(Boolean)
         return (
-          <section key={d} id={`day-${d}`} className={`day ${date === today ? 'today' : ''}`} onClick={() => focusDay !== d && setFocusDay(d)}>
-            <header className="day-head">
-              <button className="day-toggle" onClick={(e) => { e.stopPropagation(); setCollapsed((c) => ({ ...c, [d]: !c[d] })) }} aria-label={isOpen ? 'Collapse day' : 'Expand day'}>
-                <span className="day-dot" style={{ background: dayColor(d) }} />
-                <span className="caret">{isOpen ? '▾' : '▸'}</span>
-              </button>
+          <section key={d} id={`day-${d}`} className={`day ${date === today ? 'today' : ''} ${allDone ? 'all-done' : ''}`} style={{ '--day': dayColor(d) } as React.CSSProperties} onClick={() => focusDay !== d && setFocusDay(d)}>
+            <header className="day-head" onClick={() => setCollapsed((c) => ({ ...c, [d]: !c[d] }))}>
+              <div className="date-bubble">
+                {date ? (<><small>{fmtDate(date, { weekday: 'short' })}</small><b>{fmtDate(date, { day: 'numeric' })}</b></>) : <b>{d + 1}</b>}
+              </div>
               <div className="day-titles">
-                <div className="day-date">
-                  {date ? fmtDate(date, { weekday: 'long', day: 'numeric', month: 'long' }) : `Day ${d + 1}`}
-                  <span className="muted small"> · Day {d + 1}{date === today ? ' · Today' : ''}</span>
+                <div className="day-kicker">
+                  Day {d + 1}{date ? ` · ${fmtDate(date, { month: 'long' })}` : ''}
+                  {date === today && <span className="today-badge">Today</span>}
+                  {allDone && <span className="done-badge">🎉 Done!</span>}
                 </div>
-                <input className="day-title-input" placeholder="Add a title (e.g. Old town & food tour)" defaultValue={meta?.title ?? ''} key={meta?.title ?? 'empty'} onBlur={(e) => e.target.value !== (meta?.title ?? '') && setMeta(d, { title: e.target.value })} onClick={(e) => e.stopPropagation()} />
+                <input className="day-title-input" placeholder="Name this day ✏️" defaultValue={meta?.title ?? ''} key={meta?.title ?? 'empty'} onBlur={(e) => e.target.value !== (meta?.title ?? '') && setMeta(d, { title: e.target.value })} onClick={(e) => e.stopPropagation()} />
+                {stats.length > 0 && <div className="day-stats">{stats.join(' · ')}</div>}
               </div>
-              <div className="day-stats muted small">
-                {list.length > 0 && <span>{list.length} stop{list.length === 1 ? '' : 's'}</span>}
-                {km > 0 && <span>{fmtDistance(km)}</span>}
-                {cost > 0 && <span>{money(cost, trip.currency)}</span>}
-                {lastLeave !== null && list.length > 1 && <span>ends ~{fmtClock(lastLeave)}</span>}
-              </div>
+              <span className={`caret ${isOpen ? 'open' : ''}`} aria-label={isOpen ? 'Collapse day' : 'Expand day'}>›</span>
             </header>
+            {list.length > 0 && done > 0 && !allDone && <div className="day-progress"><div style={{ width: `${(done / list.length) * 100}%` }} /></div>}
             {isOpen && (
               <div className="day-body">
-                <div className="day-plan-bar">
-                  <label>🕘 Set off at <input type="time" value={meta?.startTime ?? ''} onChange={(e) => setMeta(d, { startTime: e.target.value })} /></label>
-                  <label>Getting around
-                    <select value={mode} onChange={(e) => setMeta(d, { mode: e.target.value as TravelMode })}>
-                      {(Object.keys(TRAVEL_MODES) as TravelMode[]).map((m) => <option key={m} value={m}>{TRAVEL_MODES[m].icon} {TRAVEL_MODES[m].label}</option>)}
+                <div className="day-plan-bar no-print">
+                  <label className="pill-field" title="When you set off from the first stop">🕘<input type="time" value={meta?.startTime ?? ''} onChange={(e) => setMeta(d, { startTime: e.target.value })} aria-label="Set off at" /></label>
+                  <label className="pill-field" title="How you get around (Auto walks short hops, drives longer ones)">
+                    {TRAVEL_MODES[mode].icon}
+                    <select value={mode} onChange={(e) => setMeta(d, { mode: e.target.value as TravelMode })} aria-label="Getting around">
+                      {(Object.keys(TRAVEL_MODES) as TravelMode[]).map((m) => <option key={m} value={m}>{TRAVEL_MODES[m].label}</option>)}
                     </select>
                   </label>
+                  {list.filter(hasCoords).length >= 3 && <button className="pill-btn" onClick={() => optimise(d)} title="Reorder for the shortest route">✨ Optimise</button>}
+                  {list.some((s) => s.time) && <button className="pill-btn" onClick={() => sortByTime(d)} title="Put fixed-time bookings in clock order">⏱ Sort</button>}
+                  {routeUrl && <a className="pill-btn" href={routeUrl} target="_blank" rel="noreferrer" title="Open the whole day as a route in Google Maps">🗺️ Google Maps</a>}
                 </div>
-                {list.length > 1 && (
-                  <div className="day-tools no-print">
-                    <button className="btn tiny ghost" onClick={() => sortByTime(d)}>⏱ Sort by fixed times</button>
-                    {list.filter(hasCoords).length >= 3 && <button className="btn tiny ghost" onClick={() => optimise(d)}>✨ Optimise route</button>}
-                    {routeUrl && <a className="btn tiny ghost" href={routeUrl} target="_blank" rel="noreferrer">🗺️ Open day in Google Maps</a>}
-                  </div>
-                )}
-                {list.length === 0 && <p className="muted small pad-s">Nothing planned yet.</p>}
-                {list.map((s, i) => (
-                  <Fragment key={s.id}>
-                    {i > 0 && <Leg stop={s} timing={timeline[i]} />}
-                    <StopRow stop={s} index={i} trip={trip} all={stops} onEdit={onEdit} isFirst={i === 0} isLast={i === list.length - 1} timing={timeline[i]} />
-                  </Fragment>
-                ))}
-                <AddStop trip={trip} day={d} stops={stops} placeholder={`Add a place to day ${d + 1}…`} />
-                <textarea className="day-notes" placeholder="Notes for this day" defaultValue={meta?.notes ?? ''} key={`n-${meta?.notes ?? ''}`} onBlur={(e) => e.target.value !== (meta?.notes ?? '') && setMeta(d, { notes: e.target.value })} rows={meta?.notes ? 3 : 1} />
+                {!meta?.startTime && list.length > 1 && <div className="hint">Tip: set a time on 🕘 to see when you'll arrive and leave each place.</div>}
+                {list.length === 0 && <p className="free-day">{FREE_DAY_LINES[d % FREE_DAY_LINES.length]}</p>}
+                <div className="timeline">
+                  {list.map((s, i) => (
+                    <Fragment key={s.id}>
+                      {i > 0 && <Leg stop={s} timing={timeline[i]} />}
+                      <StopRow stop={s} index={i} trip={trip} all={stops} onEdit={onEdit} isFirst={i === 0} isLast={i === list.length - 1} timing={timeline[i]} />
+                    </Fragment>
+                  ))}
+                </div>
+                <AddStop trip={trip} day={d} stops={stops} placeholder="➕ Add a place…" />
+                <textarea className="day-notes" placeholder="📝 Notes for the day" defaultValue={meta?.notes ?? ''} key={`n-${meta?.notes ?? ''}`} onBlur={(e) => e.target.value !== (meta?.notes ?? '') && setMeta(d, { notes: e.target.value })} rows={meta?.notes ? 3 : 1} />
               </div>
             )}
           </section>
@@ -142,15 +150,16 @@ function Leg({ stop, timing }: { stop: Stop; timing: StopTiming }) {
     const n = parseInt(v, 10)
     db.stops.update(stop.id, { travelMins: v.trim() === '' || Number.isNaN(n) ? null : Math.max(0, n) })
   }
-  const icon = timing.travelMode ? TRAVEL_MODES[timing.travelMode].icon : '↓'
+  const icon = timing.travelMode ? TRAVEL_MODES[timing.travelMode].icon : '⋮'
   return (
-    <div className="leg muted small">
-      <button className="leg-btn" onClick={edit} title="Change travel time">
-        {icon} {timing.travel !== null ? fmtDuration(timing.travel) : 'travel time?'}
-        {timing.km !== null && ` · ${fmtDistance(timing.km)}`}
-        {timing.travelManual ? ' · set by you' : timing.travel !== null ? ' · est.' : ''} ✎
+    <div className="leg">
+      <button className="leg-btn" onClick={edit} title="Tap to set the real travel time">
+        <span className="leg-icon">{icon}</span>
+        {timing.travel !== null ? fmtDuration(timing.travel) : 'travel time?'}
+        {timing.km !== null && <span className="leg-km">{fmtDistance(timing.km)}</span>}
+        {timing.travelManual && <span className="leg-km">✓ yours</span>}
       </button>
-      {timing.wait > 0 && <span className="free"> · {fmtDuration(timing.wait)} free time</span>}
+      {timing.wait > 0 && <span className="free">☕ {fmtDuration(timing.wait)} free</span>}
     </div>
   )
 }

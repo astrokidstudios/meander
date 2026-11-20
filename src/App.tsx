@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import TripList from './components/TripList'
 import TripView from './components/TripView'
 import { useOnline } from './hooks'
+import Confetti from './components/Confetti'
 
 export type Tab = 'plan' | 'places' | 'map' | 'budget' | 'notes'
 
@@ -36,7 +37,8 @@ export default function App() {
 
   return (
     <div className="app">
-      {!online && <div className="offline-bar">Offline: everything still works and saves on this device. Search and new map areas need internet.</div>}
+      {!online && <div className="offline-bar">✈️ Offline mode: everything still works and saves. Search needs internet.</div>}
+      <Confetti />
       {route.view === 'home' ? (
         <TripList />
       ) : (
