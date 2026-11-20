@@ -1,0 +1,12 @@
+import { chromium } from 'playwright-core'
+const b = await chromium.launch({ channel: 'msedge', headless: true })
+const ctx = await b.newContext({ viewport: { width: 390, height: 844 } })
+const p = await ctx.newPage()
+const errs = []; p.on('pageerror', (e) => errs.push(String(e)))
+await p.goto('https://astrokidstudios.github.io/meander/')
+await p.waitForSelector('.home')
+await p.waitForTimeout(3000)
+console.log('sw:', await p.evaluate(async () => !!(await navigator.serviceWorker.getRegistration())))
+await ctx.setOffline(true); await p.reload(); await p.waitForSelector('.home', { timeout: 8000 })
+console.log('offline ok'); await p.screenshot({ path: process.argv[2] })
+console.log('errs', errs); await b.close()

@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { db, deleteTrip, exportData, type Stop } from '../db'
-import { downloadJSON, fmtRange, slug, toISODate } from '../utils'
+import { dayCount, downloadJSON, fmtRange, slug, toISODate } from '../utils'
 import { countdown } from './TripList'
 import { go, type Tab } from '../App'
 import Itinerary from './Itinerary'
@@ -26,6 +26,17 @@ export default function TripView({ tripId, tab }: { tripId: string; tab: Tab }) 
   const [editingTrip, setEditingTrip] = useState(false)
   const [editing, setEditing] = useState<Stop | null>(null)
   const [focusDay, setFocusDay] = useState<number | 'all'>('all')
+  const [jumped, setJumped] = useState(false)
+  // During the trip, open on today's day.
+  useEffect(() => {
+    if (!trip || jumped) return
+    setJumped(true)
+    const idx = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(trip.startDate + 'T00:00').getTime()) / 86400000)
+    if (trip.startDate && idx >= 0 && idx < dayCount(trip.startDate, trip.endDate)) {
+      setFocusDay(idx)
+      setTimeout(() => document.getElementById(`day-${idx}`)?.scrollIntoView({ block: 'start' }), 150)
+    }
+  }, [trip, jumped])
   const [menu, setMenu] = useState(false)
 
   if (trip === null) return <div className="center muted">Loading…</div>

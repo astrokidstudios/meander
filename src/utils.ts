@@ -187,9 +187,15 @@ export const TRAVEL_MODES: Record<TravelMode, { label: string; icon: string }> =
 
 /** Straight-line distance × 1.3 approximates real streets. Speeds are door-to-door city averages. */
 export function estimateTravel(km: number, mode: TravelMode): { mins: number; mode: Exclude<TravelMode, 'auto'> } {
-  const road = km * 1.3
+  const road = km * (km > 30 ? 1.2 : 1.3)
   const m: Exclude<TravelMode, 'auto'> = mode === 'auto' ? (km < 1.5 ? 'walk' : 'drive') : mode
-  const speed = { walk: 4.8, cycle: 14, drive: 30, transit: 18 }[m]
+  // Longer trips use faster roads (motorways, trains), so average speed rises with distance.
+  const speed = {
+    walk: 4.8,
+    cycle: 14,
+    drive: km < 10 ? 30 : km < 40 ? 50 : km < 150 ? 75 : 90,
+    transit: km < 10 ? 18 : km < 40 ? 30 : 55,
+  }[m]
   const overhead = { walk: 0, cycle: 2, drive: 5, transit: 8 }[m] // parking, waiting for the bus…
   return { mins: Math.max(1, Math.round((road / speed) * 60 + (km > 0.05 ? overhead : 0))), mode: m }
 }
