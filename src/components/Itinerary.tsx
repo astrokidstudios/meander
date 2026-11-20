@@ -4,6 +4,7 @@ import { db, type DayMeta, type Stop, type TravelMode, type Trip } from '../db'
 import { saveOrder, stopsForDay } from '../actions'
 import { addDays, buildTimeline, dayColor, dayCount, fmtClock, fmtDate, fmtDistance, fmtDuration, googleRouteUrl, hasCoords, money, optimiseRoute, routeLength, toISODate, TRAVEL_MODES, type StopTiming } from '../utils'
 import StopRow from './StopRow'
+import { useRoadLegs } from '../routing'
 import AddStop from './AddStop'
 
 const FREE_DAY_LINES = ['A free day! Add something below, or just wander. 🌤️', 'Nothing planned yet. Maybe a long lunch? 🍝', 'Blank page. Adventure goes here. 🧭']
@@ -21,6 +22,8 @@ export default function Itinerary({ trip, stops, onEdit, focusDay, setFocusDay }
   const [flash, setFlash] = useState('')
   const today = toISODate(new Date())
   const saved = stops.filter((s) => s.day === null).length
+  const dayInputs = Array.from({ length: n }, (_, d) => ({ stops: stopsForDay(stops, d), mode: (metas.find((m) => m.day === d)?.mode ?? 'auto') as TravelMode }))
+  const road = useRoadLegs(dayInputs, focusDay)
 
   function jump(d: number | 'all') {
     setFocusDay(d)
@@ -73,11 +76,11 @@ export default function Itinerary({ trip, stops, onEdit, focusDay, setFocusDay }
         const list = stopsForDay(stops, d)
         const meta = metas.find((m) => m.day === d)
         const date = trip.startDate ? addDays(trip.startDate, d) : ''
-        const km = routeLength(list)
+        const km = routeLength(list, road[d]?.legs)
         const cost = list.reduce((t, s) => t + (s.cost || 0), 0)
         const isOpen = !collapsed[d]
         const mode: TravelMode = meta?.mode ?? 'auto'
-        const timeline = buildTimeline(list, meta?.startTime, mode)
+        const timeline = buildTimeline(list, meta?.startTime, mode, road[d]?.legs)
         const lastT = timeline[timeline.length - 1]
         const lastLeave = lastT ? lastT.leave ?? lastT.arrive : null
         const routeUrl = googleRouteUrl(list, mode)
@@ -158,6 +161,7 @@ function Leg({ stop, timing }: { stop: Stop; timing: StopTiming }) {
         {timing.travel !== null ? fmtDuration(timing.travel) : 'travel time?'}
         {timing.km !== null && <span className="leg-km">{fmtDistance(timing.km)}</span>}
         {timing.travelManual && <span className="leg-km">✓ yours</span>}
+        {!timing.travelManual && timing.travel !== null && <span className="leg-km">{timing.road ? '🛣️ by road' : 'est.'}</span>}
       </button>
       {timing.wait > 0 && <span className="free">☕ {fmtDuration(timing.wait)} free</span>}
     </div>

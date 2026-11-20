@@ -1,0 +1,13 @@
+import { chromium } from 'playwright-core'
+const [file] = process.argv.slice(2)
+const b = await chromium.launch({ channel: 'msedge', headless: true })
+const p = await (await b.newContext()).newPage()
+p.on('console', (m) => console.log('console', m.type(), m.text().slice(0, 200)))
+p.on('requestfailed', (r) => console.log('failed', r.url().slice(0, 90), r.failure()?.errorText))
+p.on('request', (r) => r.url().includes('routing') && console.log('req', r.url().slice(0, 90)))
+await p.goto('http://127.0.0.1:4176/')
+await p.setInputFiles('input[type=file]', file)
+await p.locator('.trip-card').first().click()
+await p.waitForTimeout(6000)
+console.log('routes in db:', await p.evaluate(() => new Promise((ok) => { const r = indexedDB.open('meander'); r.onsuccess = () => { const db = r.result; console.log('ver', db.version, [...db.objectStoreNames].join()); if (!db.objectStoreNames.contains('routes')) return ok('no store'); const t = db.transaction('routes').objectStore('routes').count(); t.onsuccess = () => ok(t.result) } })))
+await b.close()

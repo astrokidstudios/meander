@@ -91,12 +91,22 @@ export interface CheckItem {
   order: number
 }
 
+/** A road route between two stops, fetched once and kept for offline use. */
+export interface RouteLeg {
+  key: string
+  mins: number
+  km: number
+  geom: [number, number][]
+  fetchedAt: number
+}
+
 export const db = new Dexie('meander') as Dexie & {
   trips: EntityTable<Trip, 'id'>
   stops: EntityTable<Stop, 'id'>
   days: EntityTable<DayMeta, 'id'>
   expenses: EntityTable<Expense, 'id'>
   checks: EntityTable<CheckItem, 'id'>
+  routes: EntityTable<RouteLeg, 'key'>
 }
 
 db.version(1).stores({
@@ -106,6 +116,9 @@ db.version(1).stores({
   expenses: 'id, tripId',
   checks: 'id, tripId',
 })
+
+// v2: cached road routes between stops (work offline once fetched).
+db.version(2).stores({ routes: 'key' })
 
 export const uid = () =>
   (crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36))

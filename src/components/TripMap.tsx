@@ -2,7 +2,9 @@ import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import { useEffect, useMemo, useState } from 'react'
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap, useMapEvents, CircleMarker } from 'react-leaflet'
-import type { Stop, Trip } from '../db'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { db, type Stop, type TravelMode, type Trip } from '../db'
+import { useRoadLegs } from '../routing'
 import { addStop, stopsForDay } from '../actions'
 import { addDays, dayColor, dayCount, fmtDate, hasCoords, STOP_CATS } from '../utils'
 
@@ -122,14 +124,24 @@ export default function TripMap({ trip, stops, onEdit, focusDay, setFocusDay, fu
   const fitPts: [number, number][] = (focusPts.length ? focusPts : visible).map((s) => [s.lat, s.lng])
   const signature = `${focusDay}|${fitPts.length}|${fitPts.length ? fitPts[0].join() : ''}`
 
+  const metas = useLiveQuery(() => db.days.where('tripId').equals(trip.id).toArray(), [trip.id]) ?? []
+  const dayStops = Array.from({ length: n }, (_, d) => stopsForDay(stops, d))
+  const road = useRoadLegs(dayStops.map((list, d) => ({ stops: list, mode: (metas.find((m) => m.day === d)?.mode ?? 'auto') as TravelMode })), focusDay)
+
+  // Each leg is drawn along the real road once its route is known, otherwise as a dashed straight line.
   const lines = useMemo(() => {
-    const out: { day: number; pts: [number, number][] }[] = []
-    for (let d = 0; d < n; d++) {
-      const pts = stopsForDay(stops, d).filter(hasCoords).map((s) => [s.lat, s.lng] as [number, number])
-      if (pts.length > 1) out.push({ day: d, pts })
-    }
+    const out: { key: string; day: number; pts: [number, number][]; road: boolean }[] = []
+    dayStops.forEach((list, d) => {
+      list.forEach((s, i) => {
+        const prev = list[i - 1]
+        if (!prev || !hasCoords(prev) || !hasCoords(s)) return
+        const r = road[d]?.legs.get(i)
+        out.push({ key: `${d}-${i}`, day: d, pts: r ? r.geom : [[prev.lat, prev.lng], [s.lat, s.lng]], road: !!r })
+      })
+    })
     return out
-  }, [stops, n])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stops, n, road.map((r) => r.legs.size).join()])
 
   const indexInDay = (s: Stop) => (s.day === null ? -1 : stopsForDay(stops, s.day).findIndex((x) => x.id === s.id))
 
@@ -147,14 +159,19 @@ export default function TripMap({ trip, stops, onEdit, focusDay, setFocusDay, fu
       <MapContainer center={[30, 0]} zoom={2} className="map" worldCopyJump>
         <TileLayer
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · routes: OSRM / FOSSGIS'
           maxZoom={19}
         />
         <FitBounds points={fitPts} signature={signature} />
         <ClickToAdd active={dropping} onPick={onPick} />
-        {lines.map((l) => (
-          <Polyline key={l.day} positions={l.pts} pathOptions={{ color: dayColor(l.day), weight: 4, opacity: focusDay === 'all' || focusDay === l.day ? 0.85 : 0.15, dashArray: '6 8' }} />
-        ))}
+        {lines.map((l) => {
+          const on = focusDay === 'all' || focusDay === l.day
+          return (
+            <Polyline key={l.key + (l.road ? 'r' : 's')} positions={l.pts} pathOptions={l.road
+              ? { color: dayColor(l.day), weight: on ? 5 : 3, opacity: on ? 0.9 : 0.15, lineCap: 'round', lineJoin: 'round' }
+              : { color: dayColor(l.day), weight: 3, opacity: on ? 0.6 : 0.12, dashArray: '6 8' }} />
+          )
+        })}
         {visible.map((s) => {
           const i = indexInDay(s)
           const label = s.day === null ? '★' : String(i + 1)

@@ -154,7 +154,14 @@ export function optimiseRoute(stops: Stop[]): Stop[] {
   return [...route, ...rest]
 }
 
-export function routeLength(stops: Stop[]) {
+export function routeLength(stops: Stop[], roadLegs?: Map<number, { km: number }>) {
+  if (roadLegs?.size) {
+    const g = stops.filter(hasCoords)
+    let t = 0
+    stops.forEach((s, i) => { if (i > 0) { const r = roadLegs.get(i); if (r) t += r.km; else if (hasCoords(stops[i - 1]) && hasCoords(s)) t += haversine(stops[i - 1] as Stop & { lat: number; lng: number }, s) } })
+    void g
+    return t
+  }
   const g = stops.filter(hasCoords)
   return g.slice(1).reduce((t, s, i) => t + haversine(g[i], s), 0)
 }
@@ -228,6 +235,7 @@ export interface StopTiming {
   km: number | null
   wait: number // free time before a fixed-time stop
   late: number // minutes you'd arrive after a fixed-time stop
+  road: boolean // travel time comes from a real road route
 }
 
 /**
@@ -235,7 +243,7 @@ export interface StopTiming {
  * then each next stop = previous departure + travel time; departure = arrival + time spent there.
  * A stop with a fixed time (e.g. a booking) pins the arrival: earlier → free time, later → flagged late.
  */
-export function buildTimeline(stops: Stop[], startTime: string | undefined, mode: TravelMode): StopTiming[] {
+export function buildTimeline(stops: Stop[], startTime: string | undefined, mode: TravelMode, roadLegs?: Map<number, { mins: number; km: number }>): StopTiming[] {
   const out: StopTiming[] = []
   let t: number | null = null
   stops.forEach((s, i) => {
@@ -250,6 +258,11 @@ export function buildTimeline(stops: Stop[], startTime: string | undefined, mode
         const est = estimateTravel(km, mode)
         travelMode = est.mode
         travel = est.mins
+        const road = roadLegs?.get(i)
+        if (road) {
+          travel = road.mins
+          km = road.km
+        }
       }
       if (manual) travel = s.travelMins as number
     }
@@ -257,7 +270,7 @@ export function buildTimeline(stops: Stop[], startTime: string | undefined, mode
     const start = toMins(startTime ?? '')
     if (i === 0 && start !== null) {
       // The day's departure time is when you set off from the first stop (e.g. the hotel).
-      out.push({ arrive: null, leave: start, travel: null, travelMode: null, travelManual: false, km: null, wait: 0, late: 0 })
+      out.push({ arrive: null, leave: start, travel: null, travelMode: null, travelManual: false, km: null, wait: 0, late: 0, road: false })
       t = start
       return
     }
@@ -276,7 +289,7 @@ export function buildTimeline(stops: Stop[], startTime: string | undefined, mode
       } else late = arrive - fixed
     }
     const leave = arrive !== null ? arrive + (s.duration ?? 0) : null
-    out.push({ arrive, leave, travel, travelMode, travelManual: manual, km, wait, late })
+    out.push({ arrive, leave, travel, travelMode, travelManual: manual, km, wait, late, road: !!roadLegs?.get(i) && !manual })
     t = leave
   })
   return out
