@@ -17,6 +17,7 @@ async function run(first) {
     await win.waitForTimeout(500)
     await win.screenshot({ path: `${OUT}/8-electron.png` })
   } else {
+    await win.waitForSelector('.trip-card-name', { timeout: 5000 }).catch(() => {})
     console.log('persisted trips:', await win.locator('.trip-card-name').allTextContents())
   }
   console.log('url', win.url(), 'errors', errs)
