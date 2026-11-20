@@ -1,8 +1,8 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Fragment, useState } from 'react'
-import { db, type Stop, type Trip } from '../db'
+import { db, type DayMeta, type Stop, type TravelMode, type Trip } from '../db'
 import { saveOrder, stopsForDay } from '../actions'
-import { addDays, dayColor, dayCount, fmtDate, fmtDistance, hasCoords, haversine, money, optimiseRoute, routeLength, toISODate, travelHint } from '../utils'
+import { addDays, buildTimeline, dayColor, dayCount, fmtClock, fmtDate, fmtDistance, fmtDuration, googleRouteUrl, hasCoords, money, optimiseRoute, routeLength, toISODate, TRAVEL_MODES, type StopTiming } from '../utils'
 import StopRow from './StopRow'
 import AddStop from './AddStop'
 
@@ -25,7 +25,7 @@ export default function Itinerary({ trip, stops, onEdit, focusDay, setFocusDay }
     if (d !== 'all') document.getElementById(`day-${d}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  async function setMeta(day: number, patch: { title?: string; notes?: string }) {
+  async function setMeta(day: number, patch: Partial<Pick<DayMeta, 'title' | 'notes' | 'startTime' | 'mode'>>) {
     const id = `${trip.id}:${day}`
     const cur = await db.days.get(id)
     await db.days.put({ id, tripId: trip.id, day, title: '', notes: '', ...cur, ...patch })
@@ -73,6 +73,11 @@ export default function Itinerary({ trip, stops, onEdit, focusDay, setFocusDay }
         const km = routeLength(list)
         const cost = list.reduce((t, s) => t + (s.cost || 0), 0)
         const isOpen = !collapsed[d]
+        const mode: TravelMode = meta?.mode ?? 'auto'
+        const timeline = buildTimeline(list, meta?.startTime, mode)
+        const lastT = timeline[timeline.length - 1]
+        const lastLeave = lastT ? lastT.leave ?? lastT.arrive : null
+        const routeUrl = googleRouteUrl(list, mode)
         return (
           <section key={d} id={`day-${d}`} className={`day ${date === today ? 'today' : ''}`} onClick={() => focusDay !== d && setFocusDay(d)}>
             <header className="day-head">
@@ -91,27 +96,33 @@ export default function Itinerary({ trip, stops, onEdit, focusDay, setFocusDay }
                 {list.length > 0 && <span>{list.length} stop{list.length === 1 ? '' : 's'}</span>}
                 {km > 0 && <span>{fmtDistance(km)}</span>}
                 {cost > 0 && <span>{money(cost, trip.currency)}</span>}
+                {lastLeave !== null && list.length > 1 && <span>ends ~{fmtClock(lastLeave)}</span>}
               </div>
             </header>
             {isOpen && (
               <div className="day-body">
+                <div className="day-plan-bar">
+                  <label>🕘 Set off at <input type="time" value={meta?.startTime ?? ''} onChange={(e) => setMeta(d, { startTime: e.target.value })} /></label>
+                  <label>Getting around
+                    <select value={mode} onChange={(e) => setMeta(d, { mode: e.target.value as TravelMode })}>
+                      {(Object.keys(TRAVEL_MODES) as TravelMode[]).map((m) => <option key={m} value={m}>{TRAVEL_MODES[m].icon} {TRAVEL_MODES[m].label}</option>)}
+                    </select>
+                  </label>
+                </div>
                 {list.length > 1 && (
                   <div className="day-tools no-print">
-                    <button className="btn tiny ghost" onClick={() => sortByTime(d)}>⏱ Sort by time</button>
+                    <button className="btn tiny ghost" onClick={() => sortByTime(d)}>⏱ Sort by fixed times</button>
                     {list.filter(hasCoords).length >= 3 && <button className="btn tiny ghost" onClick={() => optimise(d)}>✨ Optimise route</button>}
+                    {routeUrl && <a className="btn tiny ghost" href={routeUrl} target="_blank" rel="noreferrer">🗺️ Open day in Google Maps</a>}
                   </div>
                 )}
                 {list.length === 0 && <p className="muted small pad-s">Nothing planned yet.</p>}
-                {list.map((s, i) => {
-                  const next = list[i + 1]
-                  const leg = next && hasCoords(s) && hasCoords(next) ? haversine(s, next) : null
-                  return (
-                    <Fragment key={s.id}>
-                      <StopRow stop={s} index={i} trip={trip} all={stops} onEdit={onEdit} isFirst={i === 0} isLast={i === list.length - 1} />
-                      {leg !== null && <div className="leg muted small">↓ {fmtDistance(leg)} · {travelHint(leg)}</div>}
-                    </Fragment>
-                  )
-                })}
+                {list.map((s, i) => (
+                  <Fragment key={s.id}>
+                    {i > 0 && <Leg stop={s} timing={timeline[i]} />}
+                    <StopRow stop={s} index={i} trip={trip} all={stops} onEdit={onEdit} isFirst={i === 0} isLast={i === list.length - 1} timing={timeline[i]} />
+                  </Fragment>
+                ))}
                 <AddStop trip={trip} day={d} stops={stops} placeholder={`Add a place to day ${d + 1}…`} />
                 <textarea className="day-notes" placeholder="Notes for this day" defaultValue={meta?.notes ?? ''} key={`n-${meta?.notes ?? ''}`} onBlur={(e) => e.target.value !== (meta?.notes ?? '') && setMeta(d, { notes: e.target.value })} rows={meta?.notes ? 3 : 1} />
               </div>
@@ -119,6 +130,27 @@ export default function Itinerary({ trip, stops, onEdit, focusDay, setFocusDay }
           </section>
         )
       })}
+    </div>
+  )
+}
+
+/** The gap between two stops: travel time (estimated or set by you), distance, and any free time. */
+function Leg({ stop, timing }: { stop: Stop; timing: StopTiming }) {
+  const edit = () => {
+    const v = prompt('Travel time to this stop, in minutes (leave empty to estimate it automatically):', timing.travelManual ? String(stop.travelMins) : '')
+    if (v === null) return
+    const n = parseInt(v, 10)
+    db.stops.update(stop.id, { travelMins: v.trim() === '' || Number.isNaN(n) ? null : Math.max(0, n) })
+  }
+  const icon = timing.travelMode ? TRAVEL_MODES[timing.travelMode].icon : '↓'
+  return (
+    <div className="leg muted small">
+      <button className="leg-btn" onClick={edit} title="Change travel time">
+        {icon} {timing.travel !== null ? fmtDuration(timing.travel) : 'travel time?'}
+        {timing.km !== null && ` · ${fmtDistance(timing.km)}`}
+        {timing.travelManual ? ' · set by you' : timing.travel !== null ? ' · est.' : ''} ✎
+      </button>
+      {timing.wait > 0 && <span className="free"> · {fmtDuration(timing.wait)} free time</span>}
     </div>
   )
 }

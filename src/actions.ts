@@ -1,4 +1,7 @@
-import { db, touchTrip, uid, type Stop } from './db'
+import { db, touchTrip, uid, type Stop, type StopCategory } from './db'
+
+/** Sensible default time spent at a new place, in minutes (easy to change per stop). */
+export const DEFAULT_STAY: Record<StopCategory, number> = { sight: 90, food: 60, stay: 0, transport: 0, activity: 120, shopping: 45, other: 30 }
 
 export function sortStops(stops: Stop[]) {
   return [...stops].sort((a, b) => a.order - b.order || a.createdAt - b.createdAt)
@@ -29,6 +32,8 @@ export async function addStop(tripId: string, day: number | null, data: Partial<
     notes: '',
     done: false,
     createdAt: Date.now(),
+    duration: DEFAULT_STAY[data.category ?? 'sight'],
+    travelMins: null,
     ...data,
   }
   await db.stops.add(stop)

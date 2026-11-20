@@ -5,6 +5,7 @@ Everything is stored on the device (IndexedDB). No account, no server.
 
 ## Features
 - **Trips** with dates, currency, budget, number of travellers, colour.
+- **Day timeline**: set the time you set off, how long you stay at each place (sensible defaults by type), and how you get around. Each stop shows arrive/leave times, travel time between stops (estimated, or set your own), free time before bookings and a warning if you would be late. "Open day in Google Maps" opens the whole day as a route.
 - **Itinerary**: one card per day, with times, costs, booking refs, notes, done-ticks, a title and notes per day.
   Distance and a walk/drive estimate between stops, **Sort by time** and **Optimise route** (shortest order, first stop kept).
 - **Saved places**: a wishlist you schedule into days with the calendar picker on each place.

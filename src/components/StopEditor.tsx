@@ -4,7 +4,7 @@ import { duplicateStop, moveStopToDay } from '../actions'
 import { searchPlaces, useOnline, type GeoResult } from '../hooks'
 import { STOP_CATS } from '../utils'
 import Modal from './Modal'
-import { DaySelect } from './StopRow'
+import { DaySelect, DurationSelect } from './StopRow'
 
 /** Pulls coordinates out of a pasted map link or "lat, lng" text. */
 export function parseCoords(text: string): { lat: number; lng: number } | null {
@@ -87,10 +87,11 @@ export default function StopEditor({ trip, stop, onClose }: { trip: Trip; stop: 
           <label>Day<DaySelect trip={trip} value={f.day} onChange={(d) => set('day', d)} /></label>
         </div>
         <div className="grid3">
-          <label>Start time<input type="time" value={f.time} onChange={(e) => set('time', e.target.value)} /></label>
-          <label>End time<input type="time" value={f.endTime} onChange={(e) => set('endTime', e.target.value)} /></label>
+          <label>Time spent here<DurationSelect value={f.duration ?? 0} onChange={(m) => set('duration', m)} /></label>
+          <label title="Only for things booked at a set time, e.g. a tour or table">Fixed time (booking)<input type="time" value={f.time} onChange={(e) => set('time', e.target.value)} /></label>
           <label>Cost ({trip.currency})<input type="number" min={0} step="0.01" inputMode="decimal" value={f.cost || ''} onChange={(e) => set('cost', Number(e.target.value))} placeholder="0" /></label>
         </div>
+        <label>Travel time to here (minutes)<input type="number" min={0} value={f.travelMins ?? ''} onChange={(e) => set('travelMins', e.target.value === '' ? null : Number(e.target.value))} placeholder="Leave empty to estimate from the map" /></label>
         <label>Booking / confirmation no.<input value={f.booking} onChange={(e) => set('booking', e.target.value)} placeholder="e.g. flight number, hotel reference" /></label>
         <label>Notes<textarea rows={3} value={f.notes} onChange={(e) => set('notes', e.target.value)} placeholder="Opening hours, what to order, tips…" /></label>
         <label>Link<input type="url" value={f.url} onChange={(e) => set('url', e.target.value)} placeholder="https://" /></label>

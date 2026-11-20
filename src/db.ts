@@ -43,6 +43,10 @@ export interface Stop {
   notes: string
   done: boolean
   createdAt: number
+  /** Minutes spent at this place. */
+  duration?: number
+  /** Manual travel time (minutes) from the previous stop; null/undefined = estimate it. */
+  travelMins?: number | null
 }
 
 export interface DayMeta {
@@ -51,7 +55,12 @@ export interface DayMeta {
   day: number
   title: string
   notes: string
+  /** Departure time from the first stop, HH:MM. */
+  startTime?: string
+  mode?: TravelMode
 }
+
+export type TravelMode = 'auto' | 'walk' | 'drive' | 'transit' | 'cycle'
 
 export type ExpenseCategory =
   | 'stay'

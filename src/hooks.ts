@@ -31,7 +31,7 @@ function guessCategory(cls = '', type = ''): StopCategory {
   if (cls === 'railway' || cls === 'aeroway' || /station|aerodrome|bus_stop|ferry|terminal|airport/.test(type)) return 'transport'
   if (cls === 'shop' || /mall|department_store/.test(type)) return 'shopping'
   if (/theme_park|zoo|aquarium|cinema|theatre|stadium|sports|beach|park|nature_reserve|water_park/.test(type) || cls === 'leisure') return 'activity'
-  if (cls === 'tourism' || cls === 'historic' || /museum|monument|castle|church|cathedral|viewpoint|attraction|gallery|memorial/.test(type)) return 'sight'
+  if (cls === 'tourism' || cls === 'historic' || /museum|monument|castle|church|cathedral|viewpoint|attraction|gallery|memorial|tower|square|palace|fort|ruins|bridge|archaeological|place_of_worship|artwork|landmark/.test(type)) return 'sight'
   return 'other'
 }
 

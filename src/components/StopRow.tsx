@@ -1,6 +1,17 @@
 import { db, type Stop, type Trip } from '../db'
 import { moveStopToDay, nudge } from '../actions'
-import { addDays, dayColor, dayCount, fmtDate, money, STOP_CATS } from '../utils'
+import { addDays, dayColor, dayCount, fmtClock, fmtDate, fmtDuration, money, STOP_CATS, type StopTiming } from '../utils'
+
+const DURATIONS = [0, 15, 30, 45, 60, 75, 90, 120, 150, 180, 240, 300, 360, 480]
+
+export function DurationSelect({ value, onChange, compact }: { value: number; onChange: (m: number) => void; compact?: boolean }) {
+  const opts = DURATIONS.includes(value) ? DURATIONS : [...DURATIONS, value].sort((a, b) => a - b)
+  return (
+    <select className={compact ? 'dur-select' : ''} value={value} onChange={(e) => onChange(Number(e.target.value))} title="How long you stay">
+      {opts.map((m) => <option key={m} value={m}>{m === 0 ? (compact ? 'Stay: –' : 'Not set') : (compact ? `Stay ${fmtDuration(m)}` : fmtDuration(m))}</option>)}
+    </select>
+  )
+}
 
 export function DaySelect({ trip, value, onChange, savedLabel = 'Saved (no day)' }: { trip: Trip; value: number | null; onChange: (d: number | null) => void; savedLabel?: string }) {
   const n = dayCount(trip.startDate, trip.endDate)
@@ -14,7 +25,7 @@ export function DaySelect({ trip, value, onChange, savedLabel = 'Saved (no day)'
   )
 }
 
-export default function StopRow({ stop, index, trip, all, onEdit, isFirst, isLast }: {
+export default function StopRow({ stop, index, trip, all, onEdit, isFirst, isLast, timing }: {
   stop: Stop
   index: number
   trip: Trip
@@ -22,14 +33,23 @@ export default function StopRow({ stop, index, trip, all, onEdit, isFirst, isLas
   onEdit: (s: Stop) => void
   isFirst: boolean
   isLast: boolean
+  timing?: StopTiming
 }) {
   const cat = STOP_CATS[stop.category] ?? STOP_CATS.other
   return (
     <div className={`stop ${stop.done ? 'done' : ''}`}>
       <div className="stop-badge" style={{ background: dayColor(stop.day) }}>{stop.day === null ? cat.icon : index + 1}</div>
       <button className="stop-main" onClick={() => onEdit(stop)}>
+        {timing && (timing.arrive !== null || timing.leave !== null) ? (
+          <div className="stop-clock">
+            {timing.arrive !== null && <span><b>{fmtClock(timing.arrive)}</b> arrive</span>}
+            {timing.leave !== null && (timing.arrive === null || timing.leave !== timing.arrive) && <span><b>{fmtClock(timing.leave)}</b> leave</span>}
+            {stop.time && <span className="tag">🔒 fixed {stop.time}</span>}
+            {timing.late > 0 && <span className="tag late">⚠ {fmtDuration(timing.late)} late</span>}
+          </div>
+        ) : null}
         <div className="stop-line1">
-          {stop.time && <span className="stop-time">{stop.time}{stop.endTime ? `–${stop.endTime}` : ''}</span>}
+          {!timing && stop.time && <span className="stop-time">{stop.time}{stop.endTime ? `–${stop.endTime}` : ''}</span>}
           <span className="stop-name">{stop.day !== null && <span className="cat-icon">{cat.icon}</span>}{stop.name}</span>
         </div>
         {(stop.notes || stop.address) && <div className="stop-sub muted small">{stop.notes || stop.address}</div>}
@@ -40,6 +60,7 @@ export default function StopRow({ stop, index, trip, all, onEdit, isFirst, isLas
         </div>
       </button>
       <div className="stop-actions no-print">
+        {timing && timing.arrive !== null && <DurationSelect compact value={stop.duration ?? 0} onChange={(m) => db.stops.update(stop.id, { duration: m })} />}
         {stop.day !== null && (
           <label className="check" title="Mark as done">
             <input type="checkbox" checked={stop.done} onChange={(e) => db.stops.update(stop.id, { done: e.target.checked })} />
