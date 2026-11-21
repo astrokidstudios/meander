@@ -16,6 +16,9 @@ import TripForm from './TripForm'
 import StopEditor from './StopEditor'
 import { type LucideIcon, CalendarDays, Ellipsis, Map as MapIcon, NotebookPen, Star, Wallet } from 'lucide-react'
 import { TripIcon } from '../icons'
+import { UserPlus } from 'lucide-react'
+import ShareTrip from './ShareTrip'
+import { isShared, leaveOrDelete, quietly, useSharedIds } from '../cloud'
 
 const TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
   { id: 'plan', label: 'Itinerary', icon: CalendarDays },
@@ -43,6 +46,8 @@ export default function TripView({ tripId, tab }: { tripId: string; tab: Tab }) 
     }
   }, [trip, jumped])
   const [menu, setMenu] = useState(false)
+  const [sharing, setSharing] = useState(false)
+  useSharedIds()
 
   if (trip === null) return <div className="center muted">Loading…</div>
   if (!trip) {
@@ -65,14 +70,16 @@ export default function TripView({ tripId, tab }: { tripId: string; tab: Tab }) 
           <h1>{trip.name}</h1>
           <div className="trip-sub">{fmtRange(trip.startDate, trip.endDate)}{(() => { const c = countdown(trip, toISODate(new Date())); return c && c.kind !== 'past' ? ` · ${c.kind === 'now' ? 'on the trip now!' : `${c.big} ${c.small}`}` : '' })()}</div>
         </div>
+        <button className="icon-btn" onClick={() => setSharing(true)} aria-label="Invite people" title="Invite people"><UserPlus size={20} /></button>
         <div className="menu-wrap">
           <button className="icon-btn" onClick={() => setMenu((m) => !m)} aria-label="Trip menu"><Ellipsis size={20} /></button>
           {menu && (
             <div className="menu" onMouseLeave={() => setMenu(false)}>
               <button onClick={() => { setMenu(false); setEditingTrip(true) }}>Edit trip details</button>
+              <button onClick={() => { setMenu(false); setSharing(true) }}>Invite people</button>
               {!isNative && <button onClick={() => { setMenu(false); go(`/trip/${tripId}/plan`); setTimeout(() => window.print(), 300) }}>Print / save as PDF</button>}
               <button onClick={async () => { setMenu(false); downloadJSON(await exportData(tripId), `meander-${slug(trip.name)}.json`) }}>Export this trip (file)</button>
-              <button className="danger" onClick={async () => { setMenu(false); if (confirm(`Delete “${trip.name}” and everything in it? This can’t be undone.`)) { await deleteTrip(tripId); go('/') } }}>Delete trip</button>
+              <button className="danger" onClick={async () => { setMenu(false); if (confirm(isShared(tripId) ? `Remove “${trip.name}” from this device and leave the shared trip? If you organised it, it’s deleted for everyone.` : `Delete “${trip.name}” and everything in it? This can’t be undone.`)) { await leaveOrDelete(tripId).catch(() => {}); await quietly(() => deleteTrip(tripId)); go('/') } }}>Delete trip</button>
             </div>
           )}
         </div>
@@ -103,6 +110,7 @@ export default function TripView({ tripId, tab }: { tripId: string; tab: Tab }) 
       </main>
 
       {editingTrip && <TripForm trip={trip} onClose={() => setEditingTrip(false)} />}
+      {sharing && <ShareTrip trip={trip} onClose={() => setSharing(false)} />}
       {editing && <StopEditor trip={trip} stop={editing} onClose={() => setEditing(null)} />}
     </div>
   )

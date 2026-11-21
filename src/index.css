@@ -432,3 +432,37 @@ button.stop-badge:active { transform: scale(0.9); }
 .globe { color: var(--brand); }
 .map-btn svg, .icon-btn svg { display: block; }
 .pin span svg { display: block; }
+
+/* ---------- Accounts and sharing ---------- */
+.avatar { display: inline-grid; place-items: center; border-radius: 50%; background: var(--brand); color: #fff; font-weight: 800; flex: none; letter-spacing: 0.02em; }
+.account-btn { border: 0; background: none; padding: 0; border-radius: 50%; display: grid; }
+.account-btn:active { transform: scale(0.94); }
+.at-input { display: flex; align-items: center; background: var(--surface); border: 2px solid var(--line); border-radius: 14px; padding-left: 12px; }
+.at-input span { color: var(--muted); font-weight: 800; }
+.at-input input { border: 0 !important; box-shadow: none !important; background: transparent !important; padding-left: 4px !important; flex: 1; min-width: 0; }
+.grow { flex: 1; min-width: 0; }
+.form-error { background: color-mix(in srgb, #e5484d 12%, var(--surface)); color: #b42318; border-radius: 12px; padding: 10px 13px; font-size: 0.9rem; font-weight: 700; margin-top: 10px; }
+.profile-head { display: flex; align-items: center; gap: 14px; margin: 6px 0 16px; }
+.profile-user { font-family: var(--head); font-size: 1.3rem; font-weight: 600; }
+.share-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 14px 0; }
+.share-buttons .btn { justify-content: center; }
+.share-buttons .share-wa { grid-column: 1 / -1; background: #25d366; border-color: #25d366; color: #fff; }
+.invite-user { margin: 6px 0 4px; }
+.invite-user .btn { flex: none; }
+.member-list { margin-top: 18px; }
+.member-list h3 { font-size: 1rem; margin: 0 0 8px; }
+.member { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 2px solid var(--line); }
+.member.pending { opacity: 0.75; }
+.member-name { font-weight: 800; }
+.invites { display: grid; gap: 8px; margin: 10px 0 16px; }
+.invite-card { display: flex; align-items: center; gap: 10px; background: var(--surface); border-radius: 18px; padding: 12px 14px; box-shadow: var(--shadow-sm); border: 2px solid color-mix(in srgb, var(--brand) 40%, transparent); flex-wrap: wrap; }
+.invite-icon { width: 40px; height: 40px; border-radius: 14px; display: grid; place-items: center; background: color-mix(in srgb, var(--brand) 14%, var(--surface)); color: var(--brand); flex: none; }
+.invite-title { font-weight: 800; }
+.shared-badge { display: inline-flex; vertical-align: -0.1em; margin-left: 8px; color: var(--brand); }
+.join-page { min-height: 100dvh; display: grid; place-items: center; padding: 16px; padding-top: calc(16px + env(safe-area-inset-top)); }
+.join-card { background: var(--surface); border-radius: 28px; box-shadow: var(--shadow-lg); padding: 28px 22px; width: min(440px, 100%); display: grid; gap: 12px; justify-items: center; text-align: center; }
+.join-card h1 { font-size: 1.6rem; margin: 0; }
+.join-card p { margin: 0; }
+.join-icon { width: 60px; height: 60px; border-radius: 20px; display: grid; place-items: center; background: color-mix(in srgb, var(--brand) 14%, var(--surface)); color: var(--brand); }
+@media (max-width: 400px) { .invite-card .btn { flex: 1; justify-content: center; } }
+@media (max-width: 460px) { .hide-sm { display: none; } .home-head .btn.ghost.small { padding: 8px 10px; } }

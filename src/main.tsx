@@ -5,6 +5,7 @@ import '@fontsource/fredoka/500.css'
 import '@fontsource/fredoka/600.css'
 import './index.css'
 import App from './App.tsx'
+import './cloud'
 import { registerSW } from 'virtual:pwa-register'
 
 // Offline caching for the web/iPhone version. The desktop app is already fully local.

@@ -7,6 +7,10 @@ import Logo from './Logo'
 import TripForm from './TripForm'
 import { CalendarDays, Check, Download, Globe, Luggage, MapPin, Plus, Sparkles, Upload } from 'lucide-react'
 import { Ico, TripIcon } from '../icons'
+import { Users } from 'lucide-react'
+import { AccountButton } from './Account'
+import Invites from './Invites'
+import { useSharedIds } from '../cloud'
 
 function greeting() {
   const h = new Date().getHours()
@@ -22,7 +26,7 @@ export function countdown(t: Trip, today: string) {
   return { big: String(until), kind: 'soon' as const, small: 'days to go' }
 }
 
-function TripCard({ t, places, today }: { t: Trip; places: number; today: string }) {
+function TripCard({ t, places, today, shared }: { t: Trip; places: number; today: string; shared?: boolean }) {
   const c = countdown(t, today)
   const past = t.endDate && t.endDate < today
   return (
@@ -32,7 +36,7 @@ function TripCard({ t, places, today }: { t: Trip; places: number; today: string
         {c && <div className="countdown"><b>{c.kind === 'past' ? <Check size={22} strokeWidth={3} /> : c.kind === 'now' ? <Luggage size={22} /> : c.big}</b><small>{c.small}</small></div>}
       </div>
       <div className="trip-card-body">
-        <div className="trip-card-name">{t.name}</div>
+        <div className="trip-card-name">{t.name}{shared && <span className="shared-badge" title="Shared trip"><Users size={14} aria-label="Shared" /></span>}</div>
         <div className="trip-card-meta">
           <span><Ico as={CalendarDays} size={14} /> {fmtRange(t.startDate, t.endDate)}</span>
           <span><Ico as={MapPin} size={14} /> {places}</span>
@@ -52,6 +56,7 @@ export default function TripList() {
   const [creating, setCreating] = useState(false)
   const [msg, setMsg] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
+  const sharedIds = useSharedIds()
 
   const today = toISODate(new Date())
   const upcoming = (trips ?? []).filter((t) => !t.endDate || t.endDate >= today)
@@ -78,9 +83,10 @@ export default function TripList() {
           <span className="wordmark">meander</span>
         </div>
         <div className="row gap">
-          <button className="btn ghost small" onClick={() => fileRef.current?.click()} title="Import a backup file"><Ico as={Upload} size={15} /> Import</button>
-          <button className="btn ghost small" disabled={!trips?.length} title="Save all trips to a file" onClick={async () => downloadJSON(await exportData(), `meander-backup-${today}.json`)}><Ico as={Download} size={15} /> Back up</button>
+          <button className="btn ghost small" onClick={() => fileRef.current?.click()} title="Import a backup file"><Ico as={Upload} size={15} /><span className="hide-sm">Import</span></button>
+          <button className="btn ghost small" disabled={!trips?.length} title="Save all trips to a file" onClick={async () => downloadJSON(await exportData(), `meander-backup-${today}.json`)}><Ico as={Download} size={15} /><span className="hide-sm">Back up</span></button>
           <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={onImport} />
+          <AccountButton />
         </div>
       </header>
 
@@ -89,6 +95,7 @@ export default function TripList() {
         <h1>{next ? <>Next stop: <span className="hl" style={{ '--trip': next.color } as React.CSSProperties}>{next.destination || next.name}</span></> : 'Where are we off to?'}</h1>
       </div>
       {msg && <div className="notice pop" onClick={() => setMsg('')}>{msg}</div>}
+      <Invites />
 
       {trips && trips.length === 0 ? (
         <div className="empty-hero">
@@ -100,7 +107,7 @@ export default function TripList() {
       ) : (
         <>
           <div className="trip-grid">
-            {upcoming.map((t) => <TripCard key={t.id} t={t} places={stopCounts?.[t.id] ?? 0} today={today} />)}
+            {upcoming.map((t) => <TripCard key={t.id} t={t} places={stopCounts?.[t.id] ?? 0} today={today} shared={t.id in sharedIds} />)}
             <button className="trip-card new-card" onClick={() => setCreating(true)}>
               <span className="plus"><Plus size={32} /></span>
               <span>New trip</span>
@@ -110,7 +117,7 @@ export default function TripList() {
             <>
               <h3 className="section-title">Memories</h3>
               <div className="trip-grid">
-                {past.map((t) => <TripCard key={t.id} t={t} places={stopCounts?.[t.id] ?? 0} today={today} />)}
+                {past.map((t) => <TripCard key={t.id} t={t} places={stopCounts?.[t.id] ?? 0} today={today} shared={t.id in sharedIds} />)}
               </div>
             </>
           )}
