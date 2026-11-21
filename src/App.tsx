@@ -19,6 +19,23 @@ function parseHash(): Route {
   return { view: 'home' }
 }
 
+/**
+ * A private build can ship trips in public/seed.json (never committed — see .gitignore).
+ * They're imported once on first launch; ids are kept, so it never duplicates.
+ */
+async function importSeedOnce() {
+  try {
+    if (localStorage.getItem('meander:seeded')) return
+    const res = await fetch('./seed.json', { cache: 'no-store' })
+    if (!res.ok) return
+    const { importData } = await import('./db')
+    await importData(await res.json())
+    localStorage.setItem('meander:seeded', '1')
+  } catch {
+    /* no seed in this build */
+  }
+}
+
 export const go = (path: string) => {
   location.hash = path
 }
@@ -32,6 +49,7 @@ export default function App() {
     window.addEventListener('hashchange', onHash)
     // Ask the browser to keep our data even when storage is low.
     navigator.storage?.persist?.().catch(() => {})
+    importSeedOnce()
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
