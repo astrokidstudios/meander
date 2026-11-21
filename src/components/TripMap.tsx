@@ -54,6 +54,7 @@ function getPosition(opts: PositionOptions) {
 /** Where to fix location access, in the words of the device the person is on. */
 function permissionHelp() {
   const ua = navigator.userAgent
+  if ((window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.()) return 'iPhone Settings → Meander → Location → “While Using the App”.'
   const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)
   if (ios) return 'iPhone Settings → Privacy & Security → Location Services → Safari Websites → “While Using the App”, then fully close and reopen Meander.'
   if (/Electron/.test(ua) && /Mac/.test(ua)) return 'Mac System Settings → Privacy & Security → Location Services → turn on Meander, then reopen it.'

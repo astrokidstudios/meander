@@ -1,5 +1,8 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
+import { Capacitor } from '@capacitor/core'
+
+const isNative = Capacitor.isNativePlatform()
 import { db, deleteTrip, exportData, type Stop } from '../db'
 import { dayCount, downloadJSON, fmtRange, slug, toISODate } from '../utils'
 import { countdown } from './TripList'
@@ -65,7 +68,7 @@ export default function TripView({ tripId, tab }: { tripId: string; tab: Tab }) 
           {menu && (
             <div className="menu" onMouseLeave={() => setMenu(false)}>
               <button onClick={() => { setMenu(false); setEditingTrip(true) }}>Edit trip details</button>
-              <button onClick={() => { setMenu(false); go(`/trip/${tripId}/plan`); setTimeout(() => window.print(), 300) }}>Print / save as PDF</button>
+              {!isNative && <button onClick={() => { setMenu(false); go(`/trip/${tripId}/plan`); setTimeout(() => window.print(), 300) }}>Print / save as PDF</button>}
               <button onClick={async () => { setMenu(false); downloadJSON(await exportData(tripId), `meander-${slug(trip.name)}.json`) }}>Export this trip (file)</button>
               <button className="danger" onClick={async () => { setMenu(false); if (confirm(`Delete “${trip.name}” and everything in it? This can’t be undone.`)) { await deleteTrip(tripId); go('/') } }}>Delete trip</button>
             </div>

@@ -166,7 +166,16 @@ export function routeLength(stops: Stop[], roadLegs?: Map<number, { km: number }
   return g.slice(1).reduce((t, s, i) => t + haversine(g[i], s), 0)
 }
 
-export function downloadJSON(data: unknown, filename: string) {
+export async function downloadJSON(data: unknown, filename: string) {
+  const { Capacitor } = await import('@capacitor/core')
+  if (Capacitor.isNativePlatform()) {
+    // iPhone app: save to a temporary file, then open the share sheet (Files, AirDrop, Mail…).
+    const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
+    const { Share } = await import('@capacitor/share')
+    const res = await Filesystem.writeFile({ path: filename, data: JSON.stringify(data, null, 2), directory: Directory.Cache, encoding: Encoding.UTF8 })
+    await Share.share({ title: filename, url: res.uri })
+    return
+  }
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
