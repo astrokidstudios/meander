@@ -8,25 +8,24 @@ export const dayColor = (day: number | null) =>
   day === null ? '#8a8f98' : DAY_COLORS[day % DAY_COLORS.length]
 
 export const TRIP_COLORS = ['#2ec4b6', '#ff6b4a', '#4c8dff', '#7b61ff', '#ffb627', '#ff5fa2', '#20a464', '#1f2a44']
-export const TRIP_EMOJIS = ['🌴', '🏖️', '🏔️', '🗼', '🏰', '🗽', '🌋', '🏝️', '⛷️', '🚐', '🚢', '✈️', '🎡', '🍕', '🍣', '🥐', '🌮', '🎒', '🏕️', '🌸', '🍁', '❄️', '🎢', '🐘']
 
-export const STOP_CATS: Record<StopCategory, { label: string; icon: string }> = {
-  sight: { label: 'Sight', icon: '🏛️' },
-  food: { label: 'Food & drink', icon: '🍜' },
-  stay: { label: 'Stay', icon: '🛏️' },
-  transport: { label: 'Transport', icon: '🚆' },
-  activity: { label: 'Activity', icon: '🎟️' },
-  shopping: { label: 'Shopping', icon: '🛍️' },
-  other: { label: 'Other', icon: '📍' },
+export const STOP_CATS: Record<StopCategory, { label: string }> = {
+  sight: { label: 'Sight' },
+  food: { label: 'Food & drink' },
+  stay: { label: 'Stay' },
+  transport: { label: 'Transport' },
+  activity: { label: 'Activity' },
+  shopping: { label: 'Shopping' },
+  other: { label: 'Other' },
 }
 
-export const EXPENSE_CATS: Record<ExpenseCategory, { label: string; icon: string }> = {
-  stay: { label: 'Accommodation', icon: '🛏️' },
-  transport: { label: 'Transport', icon: '🚆' },
-  food: { label: 'Food & drink', icon: '🍜' },
-  activities: { label: 'Activities', icon: '🎟️' },
-  shopping: { label: 'Shopping', icon: '🛍️' },
-  other: { label: 'Other', icon: '💸' },
+export const EXPENSE_CATS: Record<ExpenseCategory, { label: string }> = {
+  stay: { label: 'Accommodation' },
+  transport: { label: 'Transport' },
+  food: { label: 'Food & drink' },
+  activities: { label: 'Activities' },
+  shopping: { label: 'Shopping' },
+  other: { label: 'Other' },
 }
 
 export const stopToExpenseCat = (c: StopCategory): ExpenseCategory =>
@@ -193,12 +192,12 @@ export const CURRENCIES = ['GBP', 'EUR', 'USD', 'AUD', 'CAD', 'NZD', 'JPY', 'CHF
 
 // ---------- Day timeline ----------
 
-export const TRAVEL_MODES: Record<TravelMode, { label: string; icon: string }> = {
-  auto: { label: 'Auto', icon: '🧭' },
-  walk: { label: 'Walk', icon: '🚶' },
-  transit: { label: 'Transit', icon: '🚌' },
-  drive: { label: 'Drive', icon: '🚗' },
-  cycle: { label: 'Cycle', icon: '🚲' },
+export const TRAVEL_MODES: Record<TravelMode, { label: string }> = {
+  auto: { label: 'Auto' },
+  walk: { label: 'Walk' },
+  transit: { label: 'Transit' },
+  drive: { label: 'Drive' },
+  cycle: { label: 'Cycle' },
 }
 
 /** Straight-line distance × 1.3 approximates real streets. Speeds are door-to-door city averages. */

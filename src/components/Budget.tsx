@@ -2,6 +2,8 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { db, touchTrip, uid, type ExpenseCategory, type Stop, type Trip } from '../db'
 import { EXPENSE_CATS, fmtDate, money, stopToExpenseCat, toISODate } from '../utils'
+import { X } from 'lucide-react'
+import { EXPENSE_ICONS, Ico } from '../icons'
 
 export default function Budget({ trip, stops }: { trip: Trip; stops: Stop[] }) {
   const expenses = useLiveQuery(() => db.expenses.where('tripId').equals(trip.id).toArray(), [trip.id]) ?? []
@@ -66,7 +68,7 @@ export default function Budget({ trip, stops }: { trip: Trip; stops: Stop[] }) {
           <h3>By category</h3>
           {byCat.map(({ c, amount }) => (
             <div key={c} className="cat-row">
-              <span>{EXPENSE_CATS[c].icon} {EXPENSE_CATS[c].label}</span>
+              <span><Ico as={EXPENSE_ICONS[c]} size={16} /> {EXPENSE_CATS[c].label}</span>
               <div className="bar"><div style={{ width: `${(amount / maxCat) * 100}%` }} /></div>
               <span className="num">{money(amount, trip.currency)}</span>
             </div>
@@ -80,7 +82,7 @@ export default function Budget({ trip, stops }: { trip: Trip; stops: Stop[] }) {
           <input placeholder="What was it?" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />
           <input type="number" min={0} step="0.01" inputMode="decimal" placeholder={`Amount (${trip.currency})`} value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} />
           <select value={f.category} onChange={(e) => setF({ ...f, category: e.target.value as ExpenseCategory })}>
-            {(Object.keys(EXPENSE_CATS) as ExpenseCategory[]).map((c) => <option key={c} value={c}>{EXPENSE_CATS[c].icon} {EXPENSE_CATS[c].label}</option>)}
+            {(Object.keys(EXPENSE_CATS) as ExpenseCategory[]).map((c) => <option key={c} value={c}>{EXPENSE_CATS[c].label}</option>)}
           </select>
           <input type="date" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} />
           <input placeholder="Paid by (optional)" value={f.paidBy} onChange={(e) => setF({ ...f, paidBy: e.target.value })} list="payers" />
@@ -113,13 +115,13 @@ export default function Budget({ trip, stops }: { trip: Trip; stops: Stop[] }) {
         <ul className="expense-list">
           {[...expenses].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt).map((e) => (
             <li key={e.id}>
-              <span className="exp-icon">{EXPENSE_CATS[e.category]?.icon}</span>
+              <span className="exp-icon"><Ico as={EXPENSE_ICONS[e.category] ?? EXPENSE_ICONS.other} size={20} /></span>
               <div className="grow">
                 <div>{e.title}</div>
                 <div className="muted small">{fmtDate(e.date, { weekday: 'short', day: 'numeric', month: 'short' })}{e.paidBy ? ` · ${e.paidBy}` : ''}</div>
               </div>
               <span className="num">{money(e.amount, trip.currency)}</span>
-              <button className="icon-btn sm" aria-label="Delete expense" onClick={() => db.expenses.delete(e.id)}>✕</button>
+              <button className="icon-btn sm" aria-label="Delete expense" onClick={() => db.expenses.delete(e.id)}><X size={16} /></button>
             </li>
           ))}
         </ul>
@@ -129,7 +131,7 @@ export default function Budget({ trip, stops }: { trip: Trip; stops: Stop[] }) {
             <ul className="expense-list">
               {planned.map((s) => (
                 <li key={s.id}>
-                  <span className="exp-icon">{EXPENSE_CATS[stopToExpenseCat(s.category)].icon}</span>
+                  <span className="exp-icon"><Ico as={EXPENSE_ICONS[stopToExpenseCat(s.category)]} size={20} /></span>
                   <div className="grow"><div>{s.name}</div><div className="muted small">{s.day === null ? 'Saved place' : `Day ${s.day + 1}`}</div></div>
                   <span className="num">{money(s.cost, trip.currency)}</span>
                 </li>

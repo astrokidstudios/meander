@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useRef, useState } from 'react'
 import { db, uid, type CheckItem, type Trip } from '../db'
+import { X } from 'lucide-react'
 
 const PACKING_STARTER = ['Passport / ID', 'Phone charger', 'Travel adapter', 'Medication', 'Toiletries', 'Bank card + some cash', 'Travel insurance details', 'Headphones']
 
@@ -28,7 +29,7 @@ function Checklist({ trip, list, title, starter }: { trip: Trip; list: CheckItem
         {sorted.map((i) => (
           <li key={i.id} className={i.done ? 'done' : ''}>
             <label><input type="checkbox" checked={i.done} onChange={(e) => db.checks.update(i.id, { done: e.target.checked })} /> <span>{i.text}</span></label>
-            <button className="icon-btn sm" aria-label="Remove" onClick={() => db.checks.delete(i.id)}>✕</button>
+            <button className="icon-btn sm" aria-label="Remove" onClick={() => db.checks.delete(i.id)}><X size={16} /></button>
           </li>
         ))}
       </ul>

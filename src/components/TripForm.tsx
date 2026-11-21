@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { db, uid, type Trip } from '../db'
-import { addDays, CURRENCIES, dayCount, toISODate, TRIP_COLORS, TRIP_EMOJIS } from '../utils'
+import { addDays, CURRENCIES, dayCount, toISODate, TRIP_COLORS } from '../utils'
 import Modal from './Modal'
+import { TRIP_ICON_KEYS, TripIcon, tripIconKey } from '../icons'
 
 export default function TripForm({ trip, onClose, onSaved }: { trip?: Trip; onClose: () => void; onSaved?: (id: string) => void }) {
   const start = toISODate(new Date(Date.now() + 14 * 86400000))
@@ -14,7 +15,7 @@ export default function TripForm({ trip, onClose, onSaved }: { trip?: Trip; onCl
     budget: trip?.budget ?? 0,
     travelers: trip?.travelers ?? 1,
     color: trip?.color ?? TRIP_COLORS[Math.floor(Math.random() * TRIP_COLORS.length)],
-    emoji: trip?.emoji ?? TRIP_EMOJIS[Math.floor(Math.random() * TRIP_EMOJIS.length)],
+    emoji: trip?.emoji ? tripIconKey(trip.emoji) : TRIP_ICON_KEYS[Math.floor(Math.random() * TRIP_ICON_KEYS.length)],
   })
   const [error, setError] = useState('')
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((p) => ({ ...p, [k]: v }))
@@ -44,7 +45,7 @@ export default function TripForm({ trip, onClose, onSaved }: { trip?: Trip; onCl
 
   return (
     <Modal
-      title={trip ? 'Edit trip' : 'New adventure ✨'}
+      title={trip ? 'Edit trip' : 'New adventure'}
       onClose={onClose}
       footer={<><button className="btn ghost" onClick={onClose}>Cancel</button><button className="btn primary" onClick={save}>{trip ? 'Save' : 'Create trip'}</button></>}
     >
@@ -63,8 +64,8 @@ export default function TripForm({ trip, onClose, onSaved }: { trip?: Trip; onCl
         <div className="field">
           <span>Pick a vibe</span>
           <div className="emoji-grid">
-            {TRIP_EMOJIS.map((e) => (
-              <button type="button" key={e} className={`emoji-opt ${f.emoji === e ? 'on' : ''}`} onClick={() => set('emoji', e)} aria-label={`Emoji ${e}`}>{e}</button>
+            {TRIP_ICON_KEYS.map((k) => (
+              <button type="button" key={k} className={`emoji-opt ${f.emoji === k ? 'on' : ''}`} onClick={() => set('emoji', k)} aria-label={`Icon ${k}`}><TripIcon value={k} size={22} /></button>
             ))}
           </div>
         </div>

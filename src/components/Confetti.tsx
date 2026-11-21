@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
+import { PartyPopper } from 'lucide-react'
 
-const BITS = ['🎉', '✨', '🌴', '⭐', '🎈', '🧡', '🌍', '🍹']
 const COLORS = ['#ff6b4a', '#ffc93c', '#2ec4b6', '#7b61ff', '#4cc9f0', '#ff8fab']
 
 /** Fire a little celebration from anywhere. */
@@ -24,18 +24,18 @@ export default function Confetti() {
   return (
     <div className="confetti" key={burst.id} aria-live="polite">
       {Array.from({ length: 36 }, (_, i) => {
-        const emoji = i % 3 === 0
+        const round = i % 3 === 0
         const style = {
           left: `${Math.random() * 100}%`,
           animationDelay: `${Math.random() * 0.4}s`,
           animationDuration: `${1.6 + Math.random() * 1}s`,
           '--drift': `${(Math.random() - 0.5) * 160}px`,
           '--spin': `${(Math.random() - 0.5) * 720}deg`,
-          background: emoji ? 'none' : COLORS[i % COLORS.length],
+          background: COLORS[i % COLORS.length],
         } as React.CSSProperties
-        return <span key={i} className={emoji ? 'bit emoji' : 'bit'} style={style}>{emoji ? BITS[i % BITS.length] : ''}</span>
+        return <span key={i} className={round ? 'bit round' : 'bit'} style={style} />
       })}
-      <div className="confetti-toast">{burst.message} 🎉</div>
+      <div className="confetti-toast"><PartyPopper size={18} aria-hidden="true" /> {burst.message}</div>
     </div>
   )
 }

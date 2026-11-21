@@ -6,7 +6,10 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type Stop, type TravelMode, type Trip } from '../db'
 import { useRoadLegs } from '../routing'
 import { addStop, stopsForDay } from '../actions'
-import { addDays, dayColor, dayCount, fmtDate, hasCoords, STOP_CATS } from '../utils'
+import { addDays, dayColor, dayCount, fmtDate, hasCoords } from '../utils'
+import { MapPin, X } from 'lucide-react'
+
+const STAR_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>'
 
 type Focus = number | 'all' | 'saved'
 
@@ -175,12 +178,12 @@ export default function TripMap({ trip, stops, onEdit, focusDay, setFocusDay, fu
         })}
         {visible.map((s) => {
           const i = indexInDay(s)
-          const label = s.day === null ? '★' : String(i + 1)
+          const label = s.day === null ? STAR_SVG : String(i + 1)
           return (
             <Marker key={s.id} position={[s.lat, s.lng]} icon={pinIcon(dayColor(s.day), label, isDim(s))} zIndexOffset={isDim(s) ? 0 : 1000}>
               <Popup>
                 <div className="popup">
-                  <strong>{STOP_CATS[s.category]?.icon} {s.name}</strong>
+                  <strong>{s.name}</strong>
                   <div className="muted small">{s.day === null ? 'Saved place' : `Day ${s.day + 1}${trip.startDate ? ' · ' + fmtDate(addDays(trip.startDate, s.day), { weekday: 'short', day: 'numeric', month: 'short' }) : ''}${s.time ? ' · ' + s.time : ''}`}</div>
                   {s.notes && <div className="small">{s.notes}</div>}
                   <button className="btn tiny" onClick={() => onEdit(s)}>Edit</button>
@@ -192,10 +195,10 @@ export default function TripMap({ trip, stops, onEdit, focusDay, setFocusDay, fu
         {me && <CircleMarker center={me} radius={8} pathOptions={{ color: '#fff', weight: 3, fillColor: '#1982c4', fillOpacity: 1 }} />}
         <div className="map-controls" ref={(el) => { if (el) { L.DomEvent.disableClickPropagation(el); L.DomEvent.disableScrollPropagation(el) } }}>
           <LocateMe onFound={setMe} onMessage={setLocMsg} />
-          <button className={`map-btn ${dropping ? 'on' : ''}`} title="Drop a pin" onClick={(e) => { e.stopPropagation(); setDropping((d) => !d) }}>📍</button>
+          <button className={`map-btn ${dropping ? 'on' : ''}`} title="Drop a pin" onClick={(e) => { e.stopPropagation(); setDropping((d) => !d) }}><MapPin size={20} /></button>
         </div>
       </MapContainer>
-      {locMsg && <button className="map-msg" onClick={() => setLocMsg('')}>{locMsg} <b>✕</b></button>}
+      {locMsg && <button className="map-msg" onClick={() => setLocMsg('')}>{locMsg} <X size={14} /></button>}
       {dropping && <div className="map-hint">Tap the map to add a place{typeof focusDay === 'number' ? ` to day ${focusDay + 1}` : ' to Saved'}</div>}
       {full && (
         <div className="map-days">

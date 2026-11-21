@@ -81,7 +81,7 @@ export default function StopEditor({ trip, stop, onClose }: { trip: Trip; stop: 
         <div className="grid2">
           <label>Type
             <select value={f.category} onChange={(e) => set('category', e.target.value as StopCategory)}>
-              {(Object.keys(STOP_CATS) as StopCategory[]).map((c) => <option key={c} value={c}>{STOP_CATS[c].icon} {STOP_CATS[c].label}</option>)}
+              {(Object.keys(STOP_CATS) as StopCategory[]).map((c) => <option key={c} value={c}>{STOP_CATS[c].label}</option>)}
             </select>
           </label>
           <label>Day<DaySelect trip={trip} value={f.day} onChange={(d) => set('day', d)} /></label>

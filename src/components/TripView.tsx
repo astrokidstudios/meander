@@ -14,13 +14,15 @@ import Budget from './Budget'
 import Notes from './Notes'
 import TripForm from './TripForm'
 import StopEditor from './StopEditor'
+import { type LucideIcon, CalendarDays, Ellipsis, Map as MapIcon, NotebookPen, Star, Wallet } from 'lucide-react'
+import { TripIcon } from '../icons'
 
-const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: 'plan', label: 'Itinerary', icon: '🗓️' },
-  { id: 'places', label: 'Saved', icon: '⭐' },
-  { id: 'map', label: 'Map', icon: '🗺️' },
-  { id: 'budget', label: 'Money', icon: '💰' },
-  { id: 'notes', label: 'Notes', icon: '📝' },
+const TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
+  { id: 'plan', label: 'Itinerary', icon: CalendarDays },
+  { id: 'places', label: 'Saved', icon: Star },
+  { id: 'map', label: 'Map', icon: MapIcon },
+  { id: 'budget', label: 'Money', icon: Wallet },
+  { id: 'notes', label: 'Notes', icon: NotebookPen },
 ]
 
 export default function TripView({ tripId, tab }: { tripId: string; tab: Tab }) {
@@ -58,13 +60,13 @@ export default function TripView({ tripId, tab }: { tripId: string; tab: Tab }) 
     <div className="trip" style={{ '--trip': trip.color } as React.CSSProperties}>
       <header className="trip-head">
         <button className="icon-btn back" onClick={() => go('/')} aria-label="All trips">‹</button>
-        <div className="trip-head-emoji" onClick={() => setEditingTrip(true)}>{trip.emoji ?? '🧳'}</div>
+        <div className="trip-head-emoji" onClick={() => setEditingTrip(true)}><TripIcon value={trip.emoji} size={28} /></div>
         <div className="trip-title" onClick={() => setEditingTrip(true)} title="Edit trip">
           <h1>{trip.name}</h1>
-          <div className="trip-sub">{fmtRange(trip.startDate, trip.endDate)}{(() => { const c = countdown(trip, toISODate(new Date())); return c && c.big !== '✓' ? ` · ${c.big === '🧳' ? 'on the trip now!' : `${c.big} ${c.small}`}` : '' })()}</div>
+          <div className="trip-sub">{fmtRange(trip.startDate, trip.endDate)}{(() => { const c = countdown(trip, toISODate(new Date())); return c && c.kind !== 'past' ? ` · ${c.kind === 'now' ? 'on the trip now!' : `${c.big} ${c.small}`}` : '' })()}</div>
         </div>
         <div className="menu-wrap">
-          <button className="icon-btn" onClick={() => setMenu((m) => !m)} aria-label="Trip menu">⋯</button>
+          <button className="icon-btn" onClick={() => setMenu((m) => !m)} aria-label="Trip menu"><Ellipsis size={20} /></button>
           {menu && (
             <div className="menu" onMouseLeave={() => setMenu(false)}>
               <button onClick={() => { setMenu(false); setEditingTrip(true) }}>Edit trip details</button>
@@ -79,7 +81,7 @@ export default function TripView({ tripId, tab }: { tripId: string; tab: Tab }) 
       <nav className="tabs">
         {TABS.map((t) => (
           <button key={t.id} className={`tab ${tab === t.id ? 'on' : ''} ${t.id === 'map' ? 'tab-map' : ''}`} onClick={() => go(`/trip/${tripId}/${t.id}`)}>
-            <span className="tab-icon">{t.icon}</span>
+            <span className="tab-icon"><t.icon size={20} strokeWidth={2} aria-hidden="true" /></span>
             <span>{t.label}</span>
           </button>
         ))}

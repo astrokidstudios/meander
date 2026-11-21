@@ -6,8 +6,10 @@ import { addDays, buildTimeline, dayColor, dayCount, fmtClock, fmtDate, fmtDista
 import StopRow from './StopRow'
 import { useRoadLegs } from '../routing'
 import AddStop from './AddStop'
+import { Check, Clock, Coffee, EllipsisVertical, Map as MapIcon, PartyPopper, Route, Sparkles, Star, Timer } from 'lucide-react'
+import { Ico, MODE_ICONS } from '../icons'
 
-const FREE_DAY_LINES = ['A free day! Add something below, or just wander. 🌤️', 'Nothing planned yet. Maybe a long lunch? 🍝', 'Blank page. Adventure goes here. 🧭']
+const FREE_DAY_LINES = ['A free day! Add something below, or just wander.', 'Nothing planned yet. Maybe a long lunch?', 'Blank page. Adventure goes here.']
 
 export default function Itinerary({ trip, stops, onEdit, focusDay, setFocusDay }: {
   trip: Trip
@@ -52,9 +54,9 @@ export default function Itinerary({ trip, stops, onEdit, focusDay, setFocusDay }
     const before = routeLength(list)
     const next = optimiseRoute(list)
     const after = routeLength(next)
-    if (before - after < 0.05) return setFlash(`👌 Day ${day + 1} is already in a great order.`)
+    if (before - after < 0.05) return setFlash(`Day ${day + 1} is already in a great order.`)
     await saveOrder(next, day)
-    setFlash(`✨ Day ${day + 1} shuffled: ${fmtDistance(before)} → ${fmtDistance(after)} of travel (first stop kept).`)
+    setFlash(`Day ${day + 1} shuffled: ${fmtDistance(before)} down to ${fmtDistance(after)} of travel (first stop kept).`)
   }
 
   return (
@@ -69,7 +71,7 @@ export default function Itinerary({ trip, stops, onEdit, focusDay, setFocusDay }
       </div>
       {flash && <div className="notice pop no-print" onClick={() => setFlash('')}>{flash}</div>}
       {saved > 0 && (
-        <a className="notice subtle no-print" href={`#/trip/${trip.id}/places`}>⭐ {saved} saved place{saved === 1 ? '' : 's'} waiting for a day. Tap to plan them in.</a>
+        <a className="notice subtle no-print" href={`#/trip/${trip.id}/places`}><Ico as={Star} size={16} /> {saved} saved place{saved === 1 ? '' : 's'} waiting for a day. Tap to plan them in.</a>
       )}
 
       {Array.from({ length: n }, (_, d) => {
@@ -102,9 +104,9 @@ export default function Itinerary({ trip, stops, onEdit, focusDay, setFocusDay }
                 <div className="day-kicker">
                   Day {d + 1}{date ? ` · ${fmtDate(date, { month: 'long' })}` : ''}
                   {date === today && <span className="today-badge">Today</span>}
-                  {allDone && <span className="done-badge">🎉 Done!</span>}
+                  {allDone && <span className="done-badge"><Ico as={PartyPopper} size={14} /> Done!</span>}
                 </div>
-                <input className="day-title-input" placeholder="Name this day ✏️" defaultValue={meta?.title ?? ''} key={meta?.title ?? 'empty'} onBlur={(e) => e.target.value !== (meta?.title ?? '') && setMeta(d, { title: e.target.value })} onClick={(e) => e.stopPropagation()} />
+                <input className="day-title-input" placeholder="Name this day" defaultValue={meta?.title ?? ''} key={meta?.title ?? 'empty'} onBlur={(e) => e.target.value !== (meta?.title ?? '') && setMeta(d, { title: e.target.value })} onClick={(e) => e.stopPropagation()} />
                 {stats.length > 0 && <div className="day-stats">{stats.join(' · ')}</div>}
               </div>
               <span className={`caret ${isOpen ? 'open' : ''}`} aria-label={isOpen ? 'Collapse day' : 'Expand day'}>›</span>
@@ -113,18 +115,18 @@ export default function Itinerary({ trip, stops, onEdit, focusDay, setFocusDay }
             {isOpen && (
               <div className="day-body">
                 <div className="day-plan-bar no-print">
-                  <label className="pill-field" title="When you set off from the first stop">🕘<input type="time" value={meta?.startTime ?? ''} onChange={(e) => setMeta(d, { startTime: e.target.value })} aria-label="Set off at" /></label>
+                  <label className="pill-field" title="When you set off from the first stop"><Ico as={Clock} size={16} /><input type="time" value={meta?.startTime ?? ''} onChange={(e) => setMeta(d, { startTime: e.target.value })} aria-label="Set off at" /></label>
                   <label className="pill-field" title="How you get around (Auto walks short hops, drives longer ones)">
-                    {TRAVEL_MODES[mode].icon}
+                    <Ico as={MODE_ICONS[mode]} size={16} />
                     <select value={mode} onChange={(e) => setMeta(d, { mode: e.target.value as TravelMode })} aria-label="Getting around">
                       {(Object.keys(TRAVEL_MODES) as TravelMode[]).map((m) => <option key={m} value={m}>{TRAVEL_MODES[m].label}</option>)}
                     </select>
                   </label>
-                  {list.filter(hasCoords).length >= 3 && <button className="pill-btn" onClick={() => optimise(d)} title="Reorder for the shortest route">✨ Optimise</button>}
-                  {list.some((s) => s.time) && <button className="pill-btn" onClick={() => sortByTime(d)} title="Put fixed-time bookings in clock order">⏱ Sort</button>}
-                  {routeUrl && <a className="pill-btn" href={routeUrl} target="_blank" rel="noreferrer" title="Open the whole day as a route in Google Maps">🗺️ Google Maps</a>}
+                  {list.filter(hasCoords).length >= 3 && <button className="pill-btn" onClick={() => optimise(d)} title="Reorder for the shortest route"><Ico as={Sparkles} size={15} /> Optimise</button>}
+                  {list.some((s) => s.time) && <button className="pill-btn" onClick={() => sortByTime(d)} title="Put fixed-time bookings in clock order"><Ico as={Timer} size={15} /> Sort</button>}
+                  {routeUrl && <a className="pill-btn" href={routeUrl} target="_blank" rel="noreferrer" title="Open the whole day as a route in Google Maps"><Ico as={MapIcon} size={15} /> Google Maps</a>}
                 </div>
-                {!meta?.startTime && list.length > 1 && <div className="hint">Tip: set a time on 🕘 to see when you'll arrive and leave each place.</div>}
+                {!meta?.startTime && list.length > 1 && <div className="hint">Tip: set a start time to see when you'll arrive and leave each place.</div>}
                 {list.length === 0 && <p className="free-day">{FREE_DAY_LINES[d % FREE_DAY_LINES.length]}</p>}
                 <div className="timeline">
                   {list.map((s, i) => (
@@ -134,8 +136,8 @@ export default function Itinerary({ trip, stops, onEdit, focusDay, setFocusDay }
                     </Fragment>
                   ))}
                 </div>
-                <AddStop trip={trip} day={d} stops={stops} placeholder="➕ Add a place…" />
-                <textarea className="day-notes" placeholder="📝 Notes for the day" defaultValue={meta?.notes ?? ''} key={`n-${meta?.notes ?? ''}`} onBlur={(e) => e.target.value !== (meta?.notes ?? '') && setMeta(d, { notes: e.target.value })} rows={meta?.notes ? 3 : 1} />
+                <AddStop trip={trip} day={d} stops={stops} placeholder="Add a place…" />
+                <textarea className="day-notes" placeholder="Notes for the day" defaultValue={meta?.notes ?? ''} key={`n-${meta?.notes ?? ''}`} onBlur={(e) => e.target.value !== (meta?.notes ?? '') && setMeta(d, { notes: e.target.value })} rows={meta?.notes ? 3 : 1} />
               </div>
             )}
           </section>
@@ -153,17 +155,17 @@ function Leg({ stop, timing }: { stop: Stop; timing: StopTiming }) {
     const n = parseInt(v, 10)
     db.stops.update(stop.id, { travelMins: v.trim() === '' || Number.isNaN(n) ? null : Math.max(0, n) })
   }
-  const icon = timing.travelMode ? TRAVEL_MODES[timing.travelMode].icon : '⋮'
+  const icon = timing.travelMode ? <Ico as={MODE_ICONS[timing.travelMode]} size={13} /> : <Ico as={EllipsisVertical} size={13} />
   return (
     <div className="leg">
       <button className="leg-btn" onClick={edit} title="Tap to set the real travel time">
         <span className="leg-icon">{icon}</span>
         {timing.travel !== null ? fmtDuration(timing.travel) : 'travel time?'}
         {timing.km !== null && <span className="leg-km">{fmtDistance(timing.km)}</span>}
-        {timing.travelManual && <span className="leg-km">✓ yours</span>}
-        {!timing.travelManual && timing.travel !== null && <span className="leg-km">{timing.road ? '🛣️ by road' : 'est.'}</span>}
+        {timing.travelManual && <span className="leg-km"><Ico as={Check} size={12} /> yours</span>}
+        {!timing.travelManual && timing.travel !== null && <span className="leg-km">{timing.road ? <><Ico as={Route} size={12} /> by road</> : 'est.'}</span>}
       </button>
-      {timing.wait > 0 && <span className="free">☕ {fmtDuration(timing.wait)} free</span>}
+      {timing.wait > 0 && <span className="free"><Ico as={Coffee} size={13} /> {fmtDuration(timing.wait)} free</span>}
     </div>
   )
 }

@@ -3,6 +3,7 @@ import TripList from './components/TripList'
 import TripView from './components/TripView'
 import { useOnline } from './hooks'
 import Confetti from './components/Confetti'
+import { WifiOff } from 'lucide-react'
 
 export type Tab = 'plan' | 'places' | 'map' | 'budget' | 'notes'
 
@@ -55,7 +56,7 @@ export default function App() {
 
   return (
     <div className="app">
-      {!online && <div className="offline-bar">✈️ Offline mode: everything still works and saves. Search needs internet.</div>}
+      {!online && <div className="offline-bar"><WifiOff size={15} aria-hidden="true" /> Offline mode: everything still works and saves. Search needs internet.</div>}
       <Confetti />
       {route.view === 'home' ? (
         <TripList />

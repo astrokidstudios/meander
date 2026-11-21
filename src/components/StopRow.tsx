@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { db, type Stop, type Trip } from '../db'
 import { duplicateStop, moveStopToDay, nudge, stopsForDay } from '../actions'
-import { addDays, dayColor, dayCount, fmtClock, fmtDate, fmtDuration, money, STOP_CATS, type StopTiming } from '../utils'
+import { addDays, dayColor, dayCount, fmtClock, fmtDate, fmtDuration, money, type StopTiming } from '../utils'
 import { celebrate } from './Confetti'
+import { ArrowDown, ArrowRight, ArrowUp, CalendarDays, Check, Copy, Ellipsis, Lock, Pencil, Ticket, Trash2, TriangleAlert } from 'lucide-react'
+import { Ico, STOP_ICONS } from '../icons'
 
 const DURATIONS = [0, 15, 30, 45, 60, 75, 90, 120, 150, 180, 240, 300, 360, 480]
 
@@ -10,7 +12,7 @@ export function DurationSelect({ value, onChange, compact }: { value: number; on
   const opts = DURATIONS.includes(value) ? DURATIONS : [...DURATIONS, value].sort((a, b) => a - b)
   return (
     <select className={compact ? 'dur-select' : ''} value={value} onChange={(e) => onChange(Number(e.target.value))} title="How long you stay here">
-      {opts.map((m) => <option key={m} value={m}>{m === 0 ? (compact ? '⏳ –' : 'Not set') : (compact ? `⏳ ${fmtDuration(m)}` : fmtDuration(m))}</option>)}
+      {opts.map((m) => <option key={m} value={m}>{m === 0 ? (compact ? 'Stay –' : 'Not set') : (compact ? `Stay ${fmtDuration(m)}` : fmtDuration(m))}</option>)}
     </select>
   )
 }
@@ -46,7 +48,6 @@ export default function StopRow({ stop, index, trip, all, onEdit, isFirst, isLas
   isLast: boolean
   timing?: StopTiming
 }) {
-  const cat = STOP_CATS[stop.category] ?? STOP_CATS.other
   const [menu, setMenu] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const scheduled = stop.day !== null
@@ -62,28 +63,28 @@ export default function StopRow({ stop, index, trip, all, onEdit, isFirst, isLas
     <div className={`stop ${stop.done ? 'done' : ''} ${scheduled ? '' : 'saved-stop'}`}>
       {scheduled ? (
         <button className="stop-badge" style={{ background: dayColor(stop.day) }} onClick={() => toggleDone(stop, all)} title={stop.done ? 'Done! Tap to undo' : 'Tap when you’ve been here'} aria-label={stop.done ? 'Mark as not done' : 'Mark as done'}>
-          {stop.done ? '✓' : index + 1}
+          {stop.done ? <Check size={16} strokeWidth={3} /> : index + 1}
         </button>
       ) : (
-        <div className="stop-badge cat">{cat.icon}</div>
+        <div className="stop-badge cat"><Ico as={STOP_ICONS[stop.category] ?? STOP_ICONS.other} size={18} /></div>
       )}
       <button className="stop-main" onClick={() => onEdit(stop)}>
         {timing && (timing.arrive !== null || timing.leave !== null) && (
           <div className="stop-clock">
             {timing.arrive !== null && <span className="clock-in">{fmtClock(timing.arrive)}</span>}
-            {timing.arrive !== null && timing.leave !== null && timing.leave !== timing.arrive && <span className="clock-arrow">→</span>}
+            {timing.arrive !== null && timing.leave !== null && timing.leave !== timing.arrive && <span className="clock-arrow"><ArrowRight size={12} /></span>}
             {timing.leave !== null && (timing.arrive === null || timing.leave !== timing.arrive) && <span className="clock-out">{timing.arrive === null ? `Set off ${fmtClock(timing.leave)}` : fmtClock(timing.leave)}</span>}
-            {stop.time && <span className="tag">🔒 booked {stop.time}</span>}
-            {timing.late > 0 && <span className="tag late">⚠ {fmtDuration(timing.late)} late</span>}
+            {stop.time && <span className="tag"><Ico as={Lock} size={12} /> booked {stop.time}</span>}
+            {timing.late > 0 && <span className="tag late"><Ico as={TriangleAlert} size={12} /> {fmtDuration(timing.late)} late</span>}
           </div>
         )}
         {!timing && stop.time && <div className="stop-clock"><span className="clock-in">{stop.time}</span></div>}
-        <div className="stop-name">{scheduled && <span className="cat-icon">{cat.icon}</span>}{stop.name}</div>
+        <div className="stop-name">{scheduled && <span className="cat-icon"><Ico as={STOP_ICONS[stop.category] ?? STOP_ICONS.other} size={15} /></span>}{stop.name}</div>
         {(stop.notes || stop.address) && <div className="stop-sub">{stop.notes || stop.address}</div>}
         {(stop.cost > 0 || stop.booking || stop.lat === null) && (
           <div className="stop-tags">
             {stop.cost > 0 && <span className="tag">{money(stop.cost, trip.currency)}</span>}
-            {stop.booking && <span className="tag">🎫 {stop.booking}</span>}
+            {stop.booking && <span className="tag"><Ico as={Ticket} size={12} /> {stop.booking}</span>}
             {stop.lat === null && <span className="tag warn">no map pin</span>}
           </div>
         )}
@@ -92,22 +93,22 @@ export default function StopRow({ stop, index, trip, all, onEdit, isFirst, isLas
         {timing && timing.arrive !== null && <DurationSelect compact value={stop.duration ?? 0} onChange={(m) => db.stops.update(stop.id, { duration: m })} />}
         {!scheduled && (
           <label className="plan-it" title="Put it on a day">
-            📅
+            <Ico as={CalendarDays} size={16} />
             <DaySelect trip={trip} value={null} onChange={(d) => moveStopToDay(stop, d, all)} savedLabel="Add to day…" />
           </label>
         )}
         <div className="menu-wrap" ref={menuRef}>
-          <button className="icon-btn sm more" onClick={() => setMenu((m) => !m)} aria-label="More options">⋯</button>
+          <button className="icon-btn sm more" onClick={() => setMenu((m) => !m)} aria-label="More options"><Ellipsis size={18} /></button>
           {menu && (
             <div className="menu small-menu">
-              <button onClick={() => { setMenu(false); onEdit(stop) }}>✏️ Edit details</button>
-              {!isFirst && <button onClick={() => { setMenu(false); nudge(stop, -1, all) }}>⬆️ Move up</button>}
-              {!isLast && <button onClick={() => { setMenu(false); nudge(stop, 1, all) }}>⬇️ Move down</button>}
-              <label className="menu-select">📅 Move to
-                <DaySelect trip={trip} value={stop.day} onChange={(d) => { setMenu(false); moveStopToDay(stop, d, all) }} savedLabel="⭐ Saved list" />
+              <button onClick={() => { setMenu(false); onEdit(stop) }}><Ico as={Pencil} size={15} /> Edit details</button>
+              {!isFirst && <button onClick={() => { setMenu(false); nudge(stop, -1, all) }}><Ico as={ArrowUp} size={15} /> Move up</button>}
+              {!isLast && <button onClick={() => { setMenu(false); nudge(stop, 1, all) }}><Ico as={ArrowDown} size={15} /> Move down</button>}
+              <label className="menu-select"><Ico as={CalendarDays} size={15} /> Move to
+                <DaySelect trip={trip} value={stop.day} onChange={(d) => { setMenu(false); moveStopToDay(stop, d, all) }} savedLabel="Saved list" />
               </label>
-              <button onClick={() => { setMenu(false); duplicateStop(stop) }}>📄 Duplicate</button>
-              <button className="danger" onClick={() => { setMenu(false); if (confirm(`Remove “${stop.name}”?`)) db.stops.delete(stop.id) }}>🗑️ Remove</button>
+              <button onClick={() => { setMenu(false); duplicateStop(stop) }}><Ico as={Copy} size={15} /> Duplicate</button>
+              <button className="danger" onClick={() => { setMenu(false); if (confirm(`Remove “${stop.name}”?`)) db.stops.delete(stop.id) }}><Ico as={Trash2} size={15} /> Remove</button>
             </div>
           )}
         </div>
